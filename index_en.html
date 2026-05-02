@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>INNSZ-CALC CM</title>
+<style>
+  :root {
+    --primary: #005b99;
+    --primary-dark: #003f6b;
+    --accent: #e8a020;
+    --bg: #f0f4f8;
+    --card: #ffffff;
+    --text: #1a2535;
+    --muted: #6b7a8d;
+    --border: #d0dae6;
+    --red: #c0392b;
+    --blue: #1565c0;
+    --green: #2e7d32;
+    --orange: #e65100;
+    --purple: #6a1b9a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; -webkit-text-size-adjust: 100%; }
+
+  header { background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%); color: white; padding: 14px 18px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+  header img { height: 48px; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.4)); }
+  header .title-block h1 { font-size: 1.15rem; font-weight: 700; }
+  header .title-block p { font-size: 0.75rem; opacity: 0.85; margin-top: 2px; }
+  header .version { margin-left: auto; background: rgba(255,255,255,0.18); border-radius: 20px; padding: 4px 12px; font-size: 0.73rem; font-weight: 600; white-space: nowrap; }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 18px 14px; }
+
+  .patient-card { background: var(--card); border-radius: 14px; padding: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 18px; }
+  .section-title { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--primary); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .section-title::before { content: ''; display: block; width: 4px; height: 14px; background: var(--primary); border-radius: 2px; }
+  .inputs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; }
+  .input-group { display: flex; flex-direction: column; gap: 5px; }
+  .input-group label { font-size: 0.72rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; }
+  .input-group input, .input-group select { border: 2px solid var(--border); border-radius: 8px; padding: 12px 11px; font-size: 16px; font-weight: 600; color: var(--text); background: #f8fafc; transition: border-color 0.2s, box-shadow 0.2s; }
+  .input-group input { -webkit-appearance: none; appearance: none; }
+  .input-group select { -webkit-appearance: auto; appearance: auto; }
+  .input-group input:focus, .input-group select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,91,153,0.15); background: white; }
+  .input-group .unit { font-size: 0.7rem; color: var(--muted); margin-top: 1px; }
+
+  .computed-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .computed-chip { background: #e8f0fb; border-radius: 20px; padding: 5px 13px; display: flex; gap: 6px; align-items: baseline; }
+  .computed-chip .label { font-size: 0.7rem; color: var(--primary-dark); font-weight: 600; }
+  .computed-chip .value { font-size: 0.92rem; font-weight: 700; color: var(--primary); }
+
+  .conc-selector-card { background: var(--card); border-radius: 14px; padding: 16px 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 18px; }
+  .conc-selector-card .section-title { margin-bottom: 12px; }
+  .conc-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  .conc-btn { flex: 1; min-width: 60px; min-height: 56px; padding: 11px 8px; border: 2px solid var(--border); border-radius: 10px; background: #f8fafc; cursor: pointer; text-align: center; transition: all 0.18s; touch-action: manipulation; }
+  .conc-btn .mg { font-size: 1.05rem; font-weight: 700; color: var(--text); display: block; }
+  .conc-btn .ml { font-size: 0.7rem; color: var(--muted); display: block; margin-top: 1px; }
+  .conc-btn:hover { border-color: var(--primary); background: #e8f0fb; }
+  .conc-btn.selected { border-color: var(--primary); background: var(--primary); box-shadow: 0 3px 10px rgba(0,91,153,0.35); }
+  .conc-btn.selected .mg { color: white; }
+  .conc-btn.selected .ml { color: rgba(255,255,255,0.8); }
+
+  .tabs-container { background: var(--card); border-radius: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); overflow: hidden; }
+  .tabs-header { display: flex; overflow-x: auto; scrollbar-width: thin; scrollbar-color: var(--primary) transparent; background: #eef2f7; }
+  .tabs-header::-webkit-scrollbar { height: 3px; }
+  .tabs-header::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 3px; }
+  .tab-btn { flex: none; padding: 13px 15px; border: none; background: transparent; cursor: pointer; font-size: 0.78rem; font-weight: 600; color: var(--muted); white-space: nowrap; transition: all 0.18s; border-bottom: 3px solid transparent; touch-action: manipulation; min-height: 48px; }
+  .tab-btn:hover { color: var(--primary); background: rgba(0,91,153,0.06); }
+  .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); background: white; }
+
+  .tab-content { display: none; padding: 22px 18px; }
+  .tab-content.active { display: block; }
+
+  .protocol-title { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+  .protocol-title h3 { font-size: 1.05rem; font-weight: 700; }
+  .protocol-badge { background: var(--primary); color: white; border-radius: 20px; padding: 3px 12px; font-size: 0.73rem; font-weight: 700; }
+
+  .params-info { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+  .param-tag { background: #f0f7ff; border: 1px solid #bbd6f0; border-radius: 8px; padding: 7px 12px; }
+  .param-tag .param-label { font-size: 0.68rem; font-weight: 600; color: var(--muted); text-transform: uppercase; }
+  .param-tag .param-value { font-size: 0.9rem; font-weight: 700; color: var(--primary-dark); }
+
+  .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 4px; }
+  .result-card { background: #f4f8ff; border: 2px solid #d0dff5; border-radius: 12px; padding: 14px 16px; }
+  .result-card .r-label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 4px; }
+  .result-card .r-value { font-size: 1.6rem; font-weight: 800; color: var(--primary-dark); line-height: 1; }
+  .result-card .r-unit { font-size: 0.78rem; font-weight: 600; color: var(--muted); margin-top: 3px; }
+  .result-card.r-blue .r-value { color: var(--blue); }
+  .result-card.r-green .r-value { color: var(--green); }
+
+  .table-toggle { display: flex; align-items: center; gap: 8px; margin-top: 18px; margin-bottom: 10px; cursor: pointer; user-select: none; touch-action: manipulation; min-height: 44px; }
+  .table-toggle span { font-size: 0.78rem; font-weight: 600; color: var(--primary); text-decoration: underline; text-underline-offset: 2px; }
+  .table-toggle .arrow { font-size: 0.7rem; transition: transform 0.2s; }
+  .table-toggle.open .arrow { transform: rotate(180deg); }
+  .full-table { display: none; }
+  .full-table.open { display: block; }
+  .results-table-wrapper { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+  thead { background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: white; }
+  thead th { padding: 9px 10px; text-align: center; font-weight: 600; font-size: 0.8rem; }
+  thead th:first-child { text-align: left; padding-left: 14px; }
+  tbody tr:nth-child(even) { background: #f8fafc; }
+  tbody td { padding: 9px 10px; text-align: center; border-bottom: 1px solid #f0f4f8; }
+  tbody td:first-child { text-align: left; font-weight: 600; color: var(--muted); font-size: 0.78rem; padding-left: 14px; }
+  .col-selected { background: rgba(0,91,153,0.08) !important; }
+  .col-selected-header { background: rgba(255,255,255,0.25) !important; }
+  .val-calc { color: var(--red); font-weight: 700; }
+  .val-input { color: var(--blue); font-weight: 700; }
+  .val-fixed { color: var(--green); font-weight: 700; }
+
+  .note-box { background: #fff8e1; border-left: 4px solid var(--accent); border-radius: 0 8px 8px 0; padding: 11px 14px; margin-top: 14px; font-size: 0.83rem; color: var(--text); line-height: 1.5; }
+  .note-box strong { color: var(--orange); }
+  .info-box { background: #e3f2fd; border-left: 4px solid var(--blue); border-radius: 0 8px 8px 0; padding: 11px 14px; margin-top: 14px; font-size: 0.83rem; color: var(--text); line-height: 1.5; }
+
+  .so-section { margin-top: 22px; padding-top: 18px; border-top: 2px dashed var(--border); }
+  .so-section h4 { font-size: 0.82rem; font-weight: 700; color: var(--orange); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 12px; }
+
+  .curves-section { margin-top: 18px; background: var(--card); border-radius: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); overflow: hidden; }
+  .curves-header { background: linear-gradient(135deg, var(--purple), #9c27b0); color: white; padding: 14px 18px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; touch-action: manipulation; min-height: 48px; }
+  .curves-header h3 { font-size: 0.95rem; font-weight: 700; }
+  .curves-header .arr { font-size: 1.1rem; transition: transform 0.3s; }
+  .curves-header.open .arr { transform: rotate(180deg); }
+  .curves-body { display: none; padding: 18px; }
+  .curves-body.open { display: block; }
+  .curve-card { background: #f9f4ff; border: 1px solid #e1d5f5; border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+  .curve-card h4 { color: var(--purple); font-size: 0.88rem; margin-bottom: 7px; font-weight: 700; }
+  .curve-card p, .curve-card ul { font-size: 0.81rem; line-height: 1.6; color: var(--text); }
+  .curve-card ul { padding-left: 16px; margin-top: 5px; }
+  .phase-row { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
+  .phase-chip { border-radius: 6px; padding: 5px 11px; font-size: 0.76rem; font-weight: 600; }
+  .phase-art { background: #ffebee; color: #c62828; }
+  .phase-port { background: #e8f5e9; color: #2e7d32; }
+  .phase-eq { background: #e3f2fd; color: #1565c0; }
+  .phase-del { background: #fff3e0; color: #e65100; }
+  .phase-nef { background: #f3e5f5; color: #6a1b9a; }
+  .formula-box { background: #f0eafa; border-left: 3px solid var(--purple); border-radius: 6px; padding: 9px 13px; font-size: 0.8rem; font-family: monospace; line-height: 1.8; margin: 8px 0; color: var(--text); }
+  .timing-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 7px; margin: 8px 0; }
+  .timing-item { display: flex; align-items: center; gap: 9px; background: #fff; border: 1px solid #e1d5f5; border-radius: 7px; padding: 7px 10px; }
+  .timing-time { font-weight: 700; font-size: 0.85rem; color: var(--primary); white-space: nowrap; min-width: 58px; }
+  .timing-label { font-size: 0.8rem; color: var(--text); }
+  .ref-table { width: 100%; border-collapse: collapse; font-size: 0.79rem; margin: 6px 0; }
+  .ref-table th { background: var(--primary); color: #fff; padding: 6px 9px; text-align: left; font-weight: 600; }
+  .ref-table td { padding: 5px 9px; border-bottom: 1px solid #e8e0f5; }
+  .ref-table tr:last-child td { border-bottom: none; }
+  .ref-table tr:nth-child(even) td { background: #f9f4ff; }
+  .curve-card ul ul { margin-top: 3px; }
+
+  @media (max-width: 580px) {
+    .container { padding: 12px 10px; }
+    header { padding: 11px 12px; }
+    header img { height: 38px; }
+    .result-card .r-value { font-size: 1.3rem; }
+    .tab-content { padding: 16px 12px; }
+    .conc-btn .mg { font-size: 0.95rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <img src="logo.png" alt="INNSZ" onerror="this.style.display='none'">
+  <div class="title-block">
+    <h1>INNSZ-CALC CM</h1>
+    <p>IV Iodinated Contrast Media Dose Calculator</p>
+  </div>
+  <div class="version">v3.0</div>
+</header>
+
+<div class="container">
+
+  <!-- Patient -->
+  <div class="patient-card">
+    <div class="section-title">Patient Data</div>
+    <div class="inputs-grid">
+      <div class="input-group">
+        <label>Weight</label>
+        <input type="text" inputmode="decimal" id="weight" value="70" oninput="calc()" onchange="calc()">
+        <div class="unit">kg</div>
+      </div>
+      <div class="input-group">
+        <label>Height</label>
+        <input type="text" inputmode="decimal" id="height" value="170" oninput="calc()" onchange="calc()">
+        <div class="unit">cm</div>
+      </div>
+      <div class="input-group">
+        <label>Sex</label>
+        <select id="sex" onchange="calc()">
+          <option value="M">Male</option>
+          <option value="F">Female</option>
+        </select>
+      </div>
+    </div>
+    <div class="computed-row" id="computed-row"></div>
+  </div>
+
+  <!-- Concentration Selector -->
+  <div class="conc-selector-card">
+    <div class="section-title">CM Concentration</div>
+    <div class="conc-btns">
+      <button class="conc-btn" onclick="selectConc(300,this)"><span class="mg">300</span><span class="ml">mg/ml</span></button>
+      <button class="conc-btn" onclick="selectConc(320,this)"><span class="mg">320</span><span class="ml">mg/ml</span></button>
+      <button class="conc-btn selected" onclick="selectConc(350,this)"><span class="mg">350</span><span class="ml">mg/ml</span></button>
+      <button class="conc-btn" onclick="selectConc(370,this)"><span class="mg">370</span><span class="ml">mg/ml</span></button>
+      <button class="conc-btn" onclick="selectConc(400,this)"><span class="mg">400</span><span class="ml">mg/ml</span></button>
+    </div>
+  </div>
+
+  <!-- Protocol Tabs -->
+  <div class="tabs-container">
+    <div class="tabs-header">
+      <button class="tab-btn active" onclick="showTab('tep',this)">PE</button>
+      <button class="tab-btn" onclick="showTab('tep-piernas',this)">PE + Legs</button>
+      <button class="tab-btn" onclick="showTab('tep-obeso',this)">PE Obese</button>
+      <button class="tab-btn" onclick="showTab('higado',this)">Liver / Pancreas</button>
+      <button class="tab-btn" onclick="showTab('urotc',this)">Uro-CT</button>
+      <button class="tab-btn" onclick="showTab('torax',this)">Chest–Abd Venous</button>
+      <button class="tab-btn" onclick="showTab('abdomen',this)">Abdomen Venous</button>
+    </div>
+
+    <!-- ===== PULMONARY EMBOLISM ===== -->
+    <div id="tab-tep" class="tab-content active">
+      <div class="protocol-title">
+        <h3>Pulmonary Embolism (PE)</h3>
+        <span class="protocol-badge">160 mg I/kg · 7.5 s</span>
+      </div>
+      <div class="params-info">
+        <div class="param-tag"><div class="param-label">Dose</div><div class="param-value" style="color:var(--blue);font-weight:700">160 mg I/kg</div></div>
+        <div class="param-tag"><div class="param-label">Inj. time</div><div class="param-value" style="color:var(--blue);font-weight:700">7.5 s</div></div>
+        <div class="param-tag"><div class="param-label">Total I dose</div><div class="param-value" id="tep-total" style="color:var(--red);font-weight:700">—</div></div>
+      </div>
+      <div id="tep-cards" class="result-grid"></div>
+      <div class="table-toggle" onclick="toggleTable('tep-table',this)">
+        <span>View full table (all concentrations)</span><span class="arrow">▼</span>
+      </div>
+      <div id="tep-table" class="full-table">
+        <div class="results-table-wrapper">
+          <table><thead id="tep-thead"></thead><tbody id="tep-body"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PE + LEGS ===== -->
+    <div id="tab-tep-piernas" class="tab-content">
+      <div class="protocol-title">
+        <h3>PE + Leg Angiography</h3>
+        <span class="protocol-badge">160 mg I/kg · 7.5 s</span>
+      </div>
+      <div class="params-info">
+        <div class="param-tag"><div class="param-label">Dose</div><div class="param-value" style="color:var(--blue);font-weight:700">160 mg I/kg</div></div>
+        <div class="param-tag"><div class="param-label">Inj. time</div><div class="param-value" style="color:var(--blue);font-weight:700">7.5 s</div></div>
+        <div class="param-tag"><div class="param-label">Total I dose</div><div class="param-value" id="tepleg-total" style="color:var(--red);font-weight:700">—</div></div>
+      </div>
+      <div id="tepleg-cards" class="result-grid"></div>
+      <div class="table-toggle" onclick="toggleTable('tepleg-table',this)">
+        <span>View full table</span><span class="arrow">▼</span>
+      </div>
+      <div id="tepleg-table" class="full-table">
+        <div class="results-table-wrapper">
+          <table><thead id="tepleg-thead"></thead><tbody id="tepleg-body"></tbody></table>
+        </div>
+      </div>
+      <div class="note-box">
+        <strong>Injector protocol — Legs:</strong><br>
+        1. Program PE bolus (CM volume at calculated flow rate) + saline chaser at the <strong>same flow rate</strong> with <strong>30 ml NS</strong>.<br>
+        2. Repeat calculated CM volume at <strong>3.0 ml/s</strong> + <strong>20 ml NS</strong>.
+      </div>
+    </div>
+
+    <!-- ===== PE OBESE ===== -->
+    <div id="tab-tep-obeso" class="tab-content">
+      <div class="protocol-title">
+        <h3>PE — Obese Patient</h3>
+        <span class="protocol-badge">160 mg I/kg LBW · 7.5 s</span>
+      </div>
+      <div class="params-info">
+        <div class="param-tag"><div class="param-label">Dose</div><div class="param-value" style="color:var(--blue);font-weight:700">160 mg I/kg (LBW)</div></div>
+        <div class="param-tag"><div class="param-label">Inj. time</div><div class="param-value" style="color:var(--blue);font-weight:700">7.5 s</div></div>
+        <div class="param-tag"><div class="param-label">Lean body weight</div><div class="param-value" id="tepo-lbw" style="color:var(--red);font-weight:700">—</div></div>
+        <div class="param-tag"><div class="param-label">Total I (LBW)</div><div class="param-value" id="tepo-total" style="color:var(--red);font-weight:700">—</div></div>
+        <div class="param-tag"><div class="param-label">Total I (actual)</div><div class="param-value" id="tepo-total-real" style="color:var(--muted);font-weight:700">—</div></div>
+      </div>
+      <div id="tepo-cards" class="result-grid"></div>
+      <div class="table-toggle" onclick="toggleTable('tepo-table',this)">
+        <span>View full table</span><span class="arrow">▼</span>
+      </div>
+      <div id="tepo-table" class="full-table">
+        <div class="results-table-wrapper">
+          <table><thead id="tepo-thead"></thead><tbody id="tepo-body"></tbody></table>
+        </div>
+      </div>
+      <div class="info-box">
+        Volume and flow based on <strong>Janmahasatian Lean Body Weight</strong>. I-flow (actual weight) shown as reference for injector programming.
+      </div>
+    </div>
+
+    <!-- ===== LIVER / PANCREAS ===== -->
+    <div id="tab-higado" class="tab-content">
+      <div class="protocol-title">
+        <h3>Liver / Pancreas / Entero-CT</h3>
+        <span class="protocol-badge">580 mg I/kg · 30 s</span>
+      </div>
+      <div class="params-info">
+        <div class="param-tag"><div class="param-label">Dose</div><div class="param-value" style="color:var(--blue);font-weight:700">580 mg I/kg</div></div>
+        <div class="param-tag"><div class="param-label">Inj. time</div><div class="param-value" style="color:var(--blue);font-weight:700">30 s</div></div>
+        <div class="param-tag"><div class="param-label">I flow rate</div><div class="param-value" id="hig-flujo" style="color:var(--red);font-weight:700">—</div></div>
+        <div class="param-tag"><div class="param-label">Total I dose</div><div class="param-value" id="hig-total" style="color:var(--red);font-weight:700">—</div></div>
+      </div>
+      <div id="hig-cards" class="result-grid"></div>
+      <div class="table-toggle" onclick="toggleTable('hig-table',this)">
+        <span>View full table</span><span class="arrow">▼</span>
+      </div>
+      <div id="hig-table" class="full-table">
+        <div class="results-table-wrapper">
+          <table><thead id="hig-thead"></thead><tbody id="hig-body"></tbody></table>
+        </div>
+      </div>
+
+      <div class="so-section" id="hig-so-section">
+        <h4 id="hig-so-title">Overweight / Obesity Adjustment (BMI 25–30)</h4>
+        <div class="params-info" style="margin-top:10px">
+          <div class="param-tag"><div class="param-label">Adjusted weight</div><div class="param-value" id="hig-so-peso" style="color:var(--red);font-weight:700">—</div></div>
+          <div class="param-tag"><div class="param-label">Total I dose</div><div class="param-value" id="hig-so-total" style="color:var(--red);font-weight:700">—</div></div>
+        </div>
+        <div id="hig-so-cards" class="result-grid" style="margin-top:12px"></div>
+        <div class="table-toggle" onclick="toggleTable('hig-so-table',this)">
+          <span>View full OW/OB table</span><span class="arrow">▼</span>
+        </div>
+        <div id="hig-so-table" class="full-table">
+          <div class="results-table-wrapper">
+            <table><thead id="hig-so-thead"></thead><tbody id="hig-so-body"></tbody></table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== URO-CT ===== -->
+    <div id="tab-urotc" class="tab-content">
+      <div class="protocol-title">
+        <h3>Uro-CT</h3>
+        <span class="protocol-badge">580 mg I/kg · 2 boluses</span>
+      </div>
+      <div class="params-info">
+        <div class="param-tag"><div class="param-label">Total dose</div><div class="param-value" style="color:var(--blue);font-weight:700">580 mg I/kg</div></div>
+        <div class="param-tag"><div class="param-label">1st bolus</div><div class="param-value" style="color:var(--blue);font-weight:700">70% · 20 s</div></div>
+        <div class="param-tag"><div class="param-label">2nd bolus</div><div class="param-value" style="color:var(--blue);font-weight:700">30% of total</div></div>
+        <div class="param-tag"><div class="param-label">Total I dose</div><div class="param-value" id="uro-total" style="color:var(--red);font-weight:700">—</div></div>
+      </div>
+      <p style="font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:10px">1st Bolus — 70%</p>
+      <div id="uro-cards1" class="result-grid"></div>
+      <p style="font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin:18px 0 10px">2nd Bolus — 30%</p>
+      <div id="uro-cards2" class="result-grid"></div>
+      <div class="table-toggle" onclick="toggleTable('uro-table',this)">
+        <span>View full table</span><span class="arrow">▼</span>
+      </div>
+      <div id="uro-table" class="full-table">
+        <div class="results-table-wrapper">
+          <table><thead id="uro-thead"></thead><tbody id="uro-body"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== CHEST-ABDOMEN VENOUS ===== -->
+    <div id="tab-torax" class="tab-content">
+      <div class="protocol-title">
+        <h3>Chest–Abdomen Venous Phase</h3>
+        <span class="protocol-badge">380 mg I/kg · 20 s</span>
+      </div>
+      <div class="params-info">
+        <div class="param-tag"><div class="param-label">Dose</div><div class="param-value" style="color:var(--blue);font-weight:700">380 mg I/kg</div></div>
+        <div class="param-tag"><div class="param-label">Inj. time</div><div class="param-value" style="color:var(--blue);font-weight:700">20 s</div></div>
+        <div class="param-tag"><div class="param-label">I flow rate</div><div class="param-value" id="tor-flujo" style="color:var(--red);font-weight:700">—</div></div>
+        <div class="param-tag"><div class="param-label">Total I dose</div><div class="param-value" id="tor-total" style="color:var(--red);font-weight:700">—</div></div>
+      </div>
+      <div id="tor-cards" class="result-grid"></div>
+      <div class="table-toggle" onclick="toggleTable('tor-table',this)">
+        <span>View full table</span><span class="arrow">▼</span>
+      </div>
+      <div id="tor-table" class="full-table">
+        <div class="results-table-wrapper">
+          <table><thead id="tor-thead"></thead><tbody id="tor-body"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== ABDOMEN VENOUS (BSA-BASED) ===== -->
+    <div id="tab-abdomen" class="tab-content">
+      <div class="protocol-title">
+        <h3>Abdomen Venous Phase (BSA-based)</h3>
+        <span class="protocol-badge">15,750 mg I/m² · 2.5 ml/s</span>
+      </div>
+      <div class="params-info">
+        <div class="param-tag"><div class="param-label">Dose</div><div class="param-value" style="color:var(--blue);font-weight:700">15,750 mg I/m²</div></div>
+        <div class="param-tag"><div class="param-label">Fixed flow rate</div><div class="param-value" style="color:var(--blue);font-weight:700">2.5 ml/s</div></div>
+        <div class="param-tag"><div class="param-label">BSA (DuBois)</div><div class="param-value" id="abd-bsa" style="color:var(--red);font-weight:700">—</div></div>
+        <div class="param-tag"><div class="param-label">Total I dose</div><div class="param-value" id="abd-total" style="color:var(--red);font-weight:700">—</div></div>
+      </div>
+      <div id="abd-cards" class="result-grid"></div>
+      <div class="table-toggle" onclick="toggleTable('abd-table',this)">
+        <span>View full table</span><span class="arrow">▼</span>
+      </div>
+      <div id="abd-table" class="full-table">
+        <div class="results-table-wrapper">
+          <table><thead id="abd-thead"></thead><tbody id="abd-body"></tbody></table>
+        </div>
+      </div>
+      <div class="note-box">
+        Flow rate is <strong>fixed at 2.5 ml/s</strong> for all concentrations. Injection time varies per concentration. I flow (mg/s): 750 / 800 / 875 / 925 / 1000.
+      </div>
+    </div>
+
+  </div><!-- /tabs-container -->
+
+  <!-- Enhancement Curves -->
+  <div class="curves-section">
+    <div class="curves-header" onclick="toggleCurves(this)">
+      <h3>📈 Enhancement Curves &amp; Technical Reference</h3>
+      <span class="arr">▼</span>
+    </div>
+    <div class="curves-body">
+
+      <div class="curve-card">
+        <h4>Principles of Enhancement (CIRTACI / SERAM 2024)</h4>
+        <p>Vascular enhancement depends primarily on the <strong>iodine delivery rate (IDR, g I/s)</strong>; parenchymal enhancement depends on the <strong>iodine load (g I/kg)</strong>. These are the two key parameters to optimise depending on the study type.</p>
+        <div class="formula-box">
+          IDR (g I/s) = Flow rate (ml/s) × Concentration (g/ml)<br>
+          Iodine load (g I/kg) = Volume (ml) × Concentration (g/ml) / Weight (kg)<br>
+          Volume (ml) = [Load (g/kg) × Weight (kg)] / Concentration (g/ml)
+        </div>
+        <ul>
+          <li>Higher IDR → earlier and higher vascular peak.</li>
+          <li>At equal total dose: higher concentration = lower volume + higher IDR = better arterial enhancement.</li>
+          <li>With poor venous access: increase concentration to maintain IDR at a lower flow rate.</li>
+          <li>Saline flush after contrast (30–40 ml): pushes the residual bolus, optimises opacification, reduces streak artifacts.</li>
+          <li>CM warmed to 37 °C: reduces viscosity ~25–30%; allows higher flow at lower injection pressure.</li>
+        </ul>
+      </div>
+
+      <div class="curve-card">
+        <h4>Physiological Opacification Timing (IV route)</h4>
+        <p style="margin-bottom:6px;font-size:0.82rem;color:var(--muted)">Mean indicative values — vary with cardiac output, weight, and physiological state. t = 0 = start of injection.</p>
+        <div class="timing-grid">
+          <div class="timing-item"><span class="timing-time">10–12 s</span><span class="timing-label">Pulmonary artery trunk</span></div>
+          <div class="timing-item"><span class="timing-time">17–22 s</span><span class="timing-label">Left ventricle / aortic arch</span></div>
+          <div class="timing-item"><span class="timing-time">25–35 s</span><span class="timing-label">Abdominal aorta (arterial phase)</span></div>
+          <div class="timing-item"><span class="timing-time">40–45 s</span><span class="timing-label">Lower limb arteries</span></div>
+          <div class="timing-item"><span class="timing-time">60–75 s</span><span class="timing-label">Hepatic portal phase</span></div>
+          <div class="timing-item"><span class="timing-time">90–100 s</span><span class="timing-label">Nephrographic phase</span></div>
+          <div class="timing-item"><span class="timing-time">3–5 min</span><span class="timing-label">Delayed / excretory phase</span></div>
+        </div>
+        <p style="margin-top:8px;font-size:0.82rem">Bolus tracking: ROI in the vessel of interest; threshold 80–100 HU for vascular studies, 100–150 HU in the aorta for hepatic arterial phase.</p>
+      </div>
+
+      <div class="curve-card">
+        <h4>Enhancement Phases — Clinical Applications</h4>
+        <div class="phase-row">
+          <div class="phase-chip phase-art">Early arterial: 15–25 s</div>
+          <div class="phase-chip phase-art" style="background:#e8624a">Late arterial: 35–45 s</div>
+          <div class="phase-chip phase-port">Portal: 60–80 s</div>
+          <div class="phase-chip phase-nef">Nephrographic: 80–120 s</div>
+          <div class="phase-chip phase-eq">Equilibrium: 120–180 s</div>
+          <div class="phase-chip phase-del">Delayed: 3–5 min</div>
+        </div>
+        <ul style="margin-top:10px">
+          <li><strong>Early arterial (15–25 s):</strong> aortic CT angiography, pulmonary arteries (PE). IDR is the key parameter.</li>
+          <li><strong>Late hepatic arterial (35–45 s):</strong> hypervascular lesions (HCC, hepatic adenoma, GIST/neuroendocrine metastases). Bolus threshold ~150 HU + 20–30 s delay.</li>
+          <li><strong>Pancreatic phase (35–45 s):</strong> maximum differentiation from ductal adenocarcinoma (bright pancreas vs hypo-dense tumour).</li>
+          <li><strong>Portal venous (60–80 s):</strong> peak hepatic enhancement (≥50 HU above baseline); detects hypovascular metastases; oncological staging.</li>
+          <li><strong>Nephrographic (80–120 s):</strong> renal tumours, cortical–medullary differentiation.</li>
+          <li><strong>Equilibrium (120–180 s):</strong> lesions with delayed enhancement (cholangiocarcinoma, HCC with washout).</li>
+          <li><strong>Excretory (3–10 min):</strong> collecting system opacification; urothelial tumours, fistulae.</li>
+        </ul>
+      </div>
+
+      <div class="curve-card">
+        <h4>Recommended Iodine Delivery Rate by Study (120 kV)</h4>
+        <p style="margin-bottom:6px;font-size:0.82rem;color:var(--muted)">Key criterion for vascular studies: IDR in g I/s. Source: CIRTACI Vasculaire / SERAM 2024.</p>
+        <table class="ref-table">
+          <thead><tr><th>Study</th><th>Target IDR</th><th>Typical flow rate (350 mg/ml)</th></tr></thead>
+          <tbody>
+            <tr><td>PE (pulmonary embolism)</td><td>1.2–1.6 g I/s</td><td>3.4–4.6 ml/s</td></tr>
+            <tr><td>Aortic / peripheral CT angiography</td><td>1.2–1.6 g I/s</td><td>3.4–4.6 ml/s</td></tr>
+            <tr><td>Coronary CT angiography</td><td>~2.0 g I/s</td><td>~5.7 ml/s</td></tr>
+            <tr><td>Liver / pancreas (oncological)</td><td>Load 0.5 g I/kg · 30 s inj.</td><td>Weight-dependent</td></tr>
+            <tr><td>Venous abdomen (oncological)</td><td>Load 0.5 g I/kg · 30 s inj.</td><td>BSA-dependent</td></tr>
+          </tbody>
+        </table>
+        <p style="margin-top:8px;font-size:0.82rem"><strong>Flow rate per concentration for IDR 1.4 g I/s:</strong> 300 mg/ml → 4.7 ml/s · 320 → 4.4 · 350 → 4.0 · 370 → 3.8 · 400 → 3.5 ml/s.</p>
+      </div>
+
+      <div class="curve-card">
+        <h4>PE — Pulmonary Embolism (Optimised Protocol)</h4>
+        <ul>
+          <li>Pulmonary artery opacifies in <strong>10–12 s</strong> → maximum effective injection time: <strong>10 s</strong>.</li>
+          <li>Bolus tracking in main pulmonary trunk: threshold 80–100 HU, immediate trigger (no added delay).</li>
+          <li>The detector takes 4–7 s to begin acquisition → contrast arrives at the pulmonary trunk at scan start.</li>
+          <li>Proximal venous access (proximal forearm or antecubital fossa); 18G cannula when possible.</li>
+          <li>Simple breath-hold — <strong>NO Valsalva manoeuvre</strong> (Valsalva delays venous return and degrades the study).</li>
+          <li><strong>Special patients:</strong></li>
+          <ul>
+            <li>Elderly (↓ cardiac output): use IDR 1.2–1.4 g I/s; peak is delayed but higher.</li>
+            <li>Athletes / pregnant (↑ cardiac output): increase IDR to 1.6–1.8 g I/s.</li>
+            <li>Obese (120–140 kV): IDR 1.6–2.0 g I/s to compensate for higher kilovoltage.</li>
+          </ul>
+          <li>In moderate obesity (up to BMI 35): use Lean Body Weight (Janmahasatian); meta-analysis confirms equivalent diagnostic quality with <strong>significantly lower injected volume</strong> (Gulizia et al., EJR 2024).</li>
+        </ul>
+      </div>
+
+      <div class="curve-card">
+        <h4>Liver &amp; Pancreas — Oncological Enhancement</h4>
+        <ul>
+          <li>Standard dose at 120 kV: <strong>0.5 g I/kg</strong> (= 500 mg I/kg). Injection time 30 s.</li>
+          <li>Portal phase target: <strong>increase ≥ 50 HU</strong> above hepatic baseline; if direct-injection CT: liver ≥ 110 HU.</li>
+          <li>If hepatic steatosis: verify spleen ≥ 120 HU (spleen more reliable than liver as reference).</li>
+          <li>Fat tissue is poorly perfused → in obese patients, BSA-based dosing avoids overdose: Dose (g I) = BSA × 18.6 g I/m² (120 kV).</li>
+          <li>INNSZ Liver/Pancreas protocol: 580 mg I/kg · OW/OB-adjusted weight over 30 s.</li>
+          <li>kV reduction: at 100 kV use 0.4 g I/kg (or BSA × 15 g I/m²); at 80 kV: 0.3 g I/kg (normal weight only).</li>
+        </ul>
+        <div class="formula-box">
+          Dose (g I) = BSA (m²) × 18.6 &nbsp;→&nbsp; 120 kV<br>
+          Dose (g I) = BSA (m²) × 15.0 &nbsp;→&nbsp; 100 kV<br>
+          Dose (g I) = BSA (m²) × 11.0 &nbsp;→&nbsp; &nbsp;80 kV (normal weight only)
+        </div>
+      </div>
+
+      <div class="curve-card">
+        <h4>Uro-CT — Split-Bolus Technique</h4>
+        <ul>
+          <li><strong>1st bolus (70% of dose):</strong> produces corticomedullary phase (25–40 s) and <strong>nephrographic phase (80–120 s)</strong>; optimal detection of solid renal tumours.</li>
+          <li><strong>2nd bolus (30% of dose):</strong> injected immediately after the 1st; excreted later, opacifying the <strong>collecting system (excretory phase, 5–10 min)</strong>.</li>
+          <li>A single delayed acquisition (5–10 min) simultaneously captures the nephrographic phase of the 2nd bolus + excretory phase of the 1st bolus.</li>
+          <li>Indications: unexplained haematuria, upper tract urothelial tumours, post-ureteral surgery assessment.</li>
+          <li>Additional delayed acquisition (10–15 min): useful in obstruction or asymmetric renal function.</li>
+        </ul>
+      </div>
+
+      <div class="curve-card">
+        <h4>Factors Affecting Enhancement</h4>
+        <ul>
+          <li><strong>↓ Cardiac output</strong> (heart failure, elderly): delayed and higher peak; increase acquisition delay; in PE ensure the bolus covers the entire pulmonary artery at the time of scanning.</li>
+          <li><strong>↑ Cardiac output</strong> (athletes, pregnancy, anaemia): earlier and lower peak; may require higher IDR.</li>
+          <li><strong>Obesity</strong>: enlarged distribution volume; fat poorly perfused → TBW-based dosing overestimates. Use LBW (vascular) or BSA (parenchymal). BSA vs TBW reduces dose ~18% in obese patients.</li>
+          <li><strong>kV reduction</strong>: brings the X-ray spectrum closer to the iodine K-edge (33.2 keV) → higher attenuation coefficient → same quality with less contrast. A 20 kV reduction ≈ 20% reduction in iodine dose and radiation.</li>
+          <li><strong>GFR &lt; 30 ml/min</strong>: weigh risk–benefit; pre-hydration; use minimum necessary dose.</li>
+          <li><strong>CM temperature 37 °C</strong>: reduces viscosity ~25–30%; allows higher flow at lower injection pressure.</li>
+        </ul>
+      </div>
+
+      <div class="curve-card">
+        <h4>Diagnostic Quality Thresholds (CIRTACI / SERAM 2024)</h4>
+        <table class="ref-table">
+          <thead><tr><th>Structure / Phase</th><th>Minimum criterion</th><th>Optimal</th></tr></thead>
+          <tbody>
+            <tr><td>Aorta (arterial phase)</td><td>≥ 300 HU</td><td>&gt; 350 HU</td></tr>
+            <tr><td>Pulmonary arteries (PE)</td><td>≥ 200 HU (segmental)</td><td>&gt; 250 HU</td></tr>
+            <tr><td>Coronary arteries</td><td>≥ 325 HU</td><td>350–400 HU</td></tr>
+            <tr><td>Hepatic parenchyma (portal)</td><td>Δ ≥ 50 HU above baseline</td><td>Abs. ≥ 110 HU</td></tr>
+            <tr><td>Spleen (if hepatic steatosis)</td><td>≥ 120 HU (portal)</td><td>—</td></tr>
+            <tr><td>Renal cortex (nephrographic)</td><td>≥ 200 HU</td><td>&gt; 250 HU</td></tr>
+            <tr><td>Pancreas (pancreatic phase)</td><td>Δ ≥ 50 HU above baseline</td><td>≥ 100 HU</td></tr>
+          </tbody>
+        </table>
+        <p style="margin-top:8px;font-size:0.82rem">If a threshold is not met: review timing, dose, IDR, or venous access. If substantially exceeded: consider dose reduction in future studies for the same patient.</p>
+      </div>
+
+      <div class="curve-card">
+        <h4>kV Optimisation Guide (CIRTACI)</h4>
+        <table class="ref-table">
+          <thead><tr><th>kV</th><th>Iodine load (g I/kg)</th><th>Iodine load (g I/m² BSA)</th><th>Patients</th></tr></thead>
+          <tbody>
+            <tr><td>120 kV</td><td>0.5 g I/kg</td><td>18.6 g I/m²</td><td>All; prefer BSA in obese</td></tr>
+            <tr><td>100 kV</td><td>0.4 g I/kg</td><td>15.0 g I/m²</td><td>Normal – moderately overweight</td></tr>
+            <tr><td>80 kV</td><td>0.3 g I/kg</td><td>11.0 g I/m²</td><td>Normal weight only (not obese)</td></tr>
+          </tbody>
+        </table>
+        <ul style="margin-top:8px">
+          <li>A 20 kV reduction ≈ ~20% reduction in iodine dose and radiation dose.</li>
+          <li>Reduce kV in 10% steps, validating quality criteria at each step before proceeding.</li>
+          <li>Combine with iterative reconstruction or AI-based reconstruction to compensate for increased noise.</li>
+          <li>Vascular IDR at 100 kV: 1.0–1.3 g I/s · at 80 kV: 0.8–1.0 g I/s.</li>
+        </ul>
+      </div>
+
+      <div class="curve-card" style="background:var(--bg2);border-left:3px solid var(--primary)">
+        <h4>References</h4>
+        <ul style="font-size:0.79rem;color:var(--muted)">
+          <li>SFR-CIRTACI. Optimisation des doses de PC en TDM Oncologie &amp; Vasculaire (v5.3, 2020).</li>
+          <li>Gulizia M et al. Adjustments of ICM using lean body weight for abdominopelvic CT: meta-analysis. <em>Eur J Radiol.</em> 2024;178:111631.</li>
+          <li>Arenas-Jiménez JJ et al. Optimising the use of iodinated CAs in CT scans. <em>Radiología.</em> 2024;66:S15–S28.</li>
+          <li>Cobos Alonso J et al. Introduction to iodinated contrast media. <em>Radiología.</em> 2024;66:S3–S14.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:20px;padding-bottom:20px;color:var(--muted);font-size:0.73rem">
+    INNSZ-CALC CM v3.0 · Instituto Nacional de Ciencias Médicas y Nutrición Salvador Zubirán<br>
+    <em>For use by qualified medical personnel only. Always verify doses using individual clinical judgment.</em>
+  </div>
+
+</div>
+
+<script>
+const CONCS = [300, 320, 350, 370, 400];
+const ABD_FLUJO_I = [750, 800, 875, 925, 1000];
+let selectedConc = 350;
+let selectedConcIdx = 2;
+
+function fmt(n, dec=1) {
+  if (n === null || n === undefined || isNaN(n) || !isFinite(n)) return '—';
+  return n.toFixed(dec);
+}
+
+function bsaDuBois(w, h) {
+  return 0.007184 * Math.pow(h, 0.725) * Math.pow(w, 0.425);
+}
+
+function lbwJanmahasatian(w, bmi, sex) {
+  return sex === 'M'
+    ? 9270 * w / (6680 + 216 * bmi)
+    : 9270 * w / (8780 + 244 * bmi);
+}
+
+function getInputs() {
+  const w = parseFloat(document.getElementById('weight').value) || 0;
+  const h = parseFloat(document.getElementById('height').value) || 0;
+  const sex = document.getElementById('sex').value;
+  const h_m = h / 100;
+  const bmi = h_m > 0 ? w / (h_m * h_m) : 0;
+  const bsa = (w > 0 && h > 0) ? bsaDuBois(w, h) : 0;
+  const lbw = (w > 0 && bmi > 0) ? lbwJanmahasatian(w, bmi, sex) : 0;
+  return { w, h, sex, h_m, bmi, bsa, lbw };
+}
+
+function selectConc(c, btn) {
+  selectedConc = c;
+  selectedConcIdx = CONCS.indexOf(c);
+  document.querySelectorAll('.conc-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  calc();
+}
+
+function buildCards(rows, container) {
+  const el = document.getElementById(container);
+  if (!el) return;
+  el.innerHTML = rows.map(r => {
+    const v = r.values[selectedConcIdx];
+    const cls = r.cls === 'val-input' ? 'r-blue' : (r.cls === 'val-fixed' ? 'r-green' : '');
+    return `<div class="result-card ${cls}">
+      <div class="r-label">${r.label}</div>
+      <div class="r-value">${v}</div>
+      <div class="r-unit">${r.unit || ''}</div>
+    </div>`;
+  }).join('');
+}
+
+function buildTable(rows, theadId, tbodyId) {
+  const thead = document.getElementById(theadId);
+  const tbody = document.getElementById(tbodyId);
+  if (!thead || !tbody) return;
+  thead.innerHTML = `<tr>
+    <th>Parameter</th>
+    ${CONCS.map((c, i) => `<th class="${i===selectedConcIdx?'col-selected-header':''}">${c} mg/ml</th>`).join('')}
+  </tr>`;
+  tbody.innerHTML = rows.map(r => `<tr>
+    <td>${r.label}</td>
+    ${r.values.map((v,i) => `<td class="${i===selectedConcIdx?'col-selected':''}"><span class="${r.cls||'val-calc'}">${v}</span></td>`).join('')}
+  </tr>`).join('');
+}
+
+function makeRows(totalI, injTime, w) {
+  return [
+    { label: 'Volume (ml)', values: CONCS.map(c => fmt(totalI/c)), unit: 'ml', cls: 'val-calc' },
+    { label: 'Flow rate (ml/s)', values: CONCS.map(c => fmt(totalI/c/injTime,2)), unit: 'ml/s', cls: 'val-calc' },
+    { label: 'I flow (mg/s)', values: CONCS.map(_ => fmt(totalI/injTime,0)), unit: 'mg I/s', cls: 'val-input' },
+    { label: 'I flow/kg/s', values: CONCS.map(_ => fmt(totalI/injTime/w,2)), unit: 'mg I/kg/s', cls: 'val-calc' },
+  ];
+}
+
+function calc() {
+  const { w, h, sex, h_m, bmi, bsa, lbw } = getInputs();
+
+  document.getElementById('computed-row').innerHTML = `
+    <div class="computed-chip"><span class="label">BSA DuBois</span><span class="value">${fmt(bsa,3)} m²</span></div>
+    <div class="computed-chip"><span class="label">BMI</span><span class="value">${fmt(bmi,1)} kg/m²</span></div>
+    <div class="computed-chip"><span class="label">LBW ${sex==='M'?'♂':'♀'}</span><span class="value">${fmt(lbw,2)} kg</span></div>
+  `;
+
+  // ---- PE ----
+  const tepTotal = 160 * w;
+  document.getElementById('tep-total').textContent = fmt(tepTotal,0) + ' mg I';
+  const tepRows = makeRows(tepTotal, 7.5, w);
+  buildCards(tepRows, 'tep-cards');
+  buildTable(tepRows, 'tep-thead', 'tep-body');
+
+  // ---- PE + LEGS ----
+  document.getElementById('tepleg-total').textContent = fmt(tepTotal,0) + ' mg I';
+  buildCards(tepRows, 'tepleg-cards');
+  buildTable(tepRows, 'tepleg-thead', 'tepleg-body');
+
+  // ---- PE OBESE ----
+  const tepoTotal = 160 * lbw;
+  const tepoTotalReal = 160 * w;
+  document.getElementById('tepo-lbw').textContent = fmt(lbw,2) + ' kg';
+  document.getElementById('tepo-total').textContent = fmt(tepoTotal,0) + ' mg I';
+  document.getElementById('tepo-total-real').textContent = fmt(tepoTotalReal,0) + ' mg I';
+  const tepoRows = [
+    { label: 'Volume (ml)', values: CONCS.map(c => fmt(tepoTotal/c)), unit: 'ml', cls: 'val-calc' },
+    { label: 'Flow rate (ml/s)', values: CONCS.map(c => fmt(tepoTotal/c/7.5,2)), unit: 'ml/s', cls: 'val-calc' },
+    { label: 'I flow — LBW (mg/s)', values: CONCS.map(_ => fmt(tepoTotal/7.5,0)), unit: 'mg I/s', cls: 'val-calc' },
+    { label: 'I flow — actual wt (mg/s)', values: CONCS.map(_ => fmt(tepoTotalReal/7.5,0)), unit: 'mg I/s', cls: 'val-input' },
+  ];
+  buildCards(tepoRows, 'tepo-cards');
+  buildTable(tepoRows, 'tepo-thead', 'tepo-body');
+
+  // ---- LIVER / PANCREAS ----
+  const higTotal = 580 * w;
+  const higFlujo = higTotal / 30;
+  document.getElementById('hig-total').textContent = fmt(higTotal,0) + ' mg I';
+  document.getElementById('hig-flujo').textContent = fmt(higFlujo,1) + ' mg I/s';
+  const higRows = makeRows(higTotal, 30, w);
+  buildCards(higRows, 'hig-cards');
+  buildTable(higRows, 'hig-thead', 'hig-body');
+
+  // OW/OB adjustment
+  const soWeight = lbw + (w - lbw) * 1.15;
+  const soTotal = 580 * soWeight;
+  document.getElementById('hig-so-peso').textContent = fmt(soWeight,2) + ' kg';
+  document.getElementById('hig-so-total').textContent = fmt(soTotal,0) + ' mg I';
+  const soRows = makeRows(soTotal, 30, soWeight);
+  buildCards(soRows, 'hig-so-cards');
+  buildTable(soRows, 'hig-so-thead', 'hig-so-body');
+  const soSection = document.getElementById('hig-so-section');
+  const soTitle = document.getElementById('hig-so-title');
+  if (bmi > 25 && bmi <= 30) {
+    soSection.style.opacity = '1'; soTitle.style.color = 'var(--orange)';
+    soTitle.textContent = '⚠ OW/OB Adjustment — APPLY (BMI ' + fmt(bmi,1) + ')';
+  } else if (bmi > 30) {
+    soSection.style.opacity = '1'; soTitle.style.color = 'var(--red)';
+    soTitle.textContent = '⚠ BMI > 30 — Review protocol with specialist';
+  } else {
+    soSection.style.opacity = '0.4';
+    soTitle.style.color = 'var(--muted)';
+    soTitle.textContent = 'OW/OB Adjustment (BMI 25–30) — Does not apply to this patient';
+  }
+
+  // ---- URO-CT ----
+  const uroTotal = 580 * w;
+  const uro1 = uroTotal * 0.70;
+  const uro2 = uroTotal * 0.30;
+  document.getElementById('uro-total').textContent = fmt(uroTotal,0) + ' mg I';
+  const uro1Rows = [
+    { label: 'Volume 1st bolus (ml)', values: CONCS.map(c => fmt(uro1/c)), unit: 'ml', cls: 'val-calc' },
+    { label: 'Flow rate (ml/s)', values: CONCS.map(c => fmt(uro1/c/20,2)), unit: 'ml/s', cls: 'val-calc' },
+    { label: 'I flow (mg/s)', values: CONCS.map(_ => fmt(uro1/20,0)), unit: 'mg I/s', cls: 'val-input' },
+  ];
+  const uro2Rows = [
+    { label: 'Volume 2nd bolus (ml)', values: CONCS.map(c => fmt(uro2/c)), unit: 'ml', cls: 'val-calc' },
+    { label: 'I flow ref. (mg/s)', values: CONCS.map(_ => fmt(uro2/20,0)), unit: 'mg I/s', cls: 'val-input' },
+  ];
+  buildCards(uro1Rows, 'uro-cards1');
+  buildCards(uro2Rows, 'uro-cards2');
+  buildTable([
+    { label: 'Vol. 1st bolus (ml)', values: CONCS.map(c => fmt(uro1/c)), unit:'ml', cls:'val-calc' },
+    { label: 'Flow rate 1st bolus (ml/s)', values: CONCS.map(c => fmt(uro1/c/20,2)), unit:'ml/s', cls:'val-calc' },
+    { label: 'Vol. 2nd bolus (ml)', values: CONCS.map(c => fmt(uro2/c)), unit:'ml', cls:'val-calc' },
+    { label: 'Total I flow (mg/s)', values: CONCS.map(_ => fmt(uroTotal/20,0)), unit:'mg I/s', cls:'val-input' },
+  ], 'uro-thead', 'uro-body');
+
+  // ---- CHEST-ABDOMEN VENOUS ----
+  const torTotal = 380 * w;
+  const torFlujo = torTotal / 20;
+  document.getElementById('tor-total').textContent = fmt(torTotal,0) + ' mg I';
+  document.getElementById('tor-flujo').textContent = fmt(torFlujo,1) + ' mg I/s';
+  buildCards(makeRows(torTotal, 20, w), 'tor-cards');
+  buildTable(makeRows(torTotal, 20, w), 'tor-thead', 'tor-body');
+
+  // ---- ABDOMEN VENOUS (BSA) ----
+  const abdTotal = 15750 * bsa;
+  document.getElementById('abd-bsa').textContent = fmt(bsa,3) + ' m²';
+  document.getElementById('abd-total').textContent = fmt(abdTotal,0) + ' mg I';
+  const abdRows = [
+    { label: 'Volume (ml)', values: CONCS.map(c => fmt(abdTotal/c)), unit: 'ml', cls: 'val-calc' },
+    { label: 'Flow rate (ml/s)', values: CONCS.map(_ => '2.50'), unit: 'ml/s', cls: 'val-input' },
+    { label: 'I flow (mg/s)', values: ABD_FLUJO_I.map(f => fmt(f,0)), unit: 'mg I/s', cls: 'val-fixed' },
+    { label: 'Inj. time (s)', values: CONCS.map(c => fmt((abdTotal/c)/2.5,1)), unit: 's', cls: 'val-calc' },
+  ];
+  buildCards(abdRows, 'abd-cards');
+  buildTable(abdRows, 'abd-thead', 'abd-body');
+}
+
+function showTab(name, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+function toggleTable(id, toggle) {
+  document.getElementById(id).classList.toggle('open');
+  toggle.classList.toggle('open');
+}
+
+function toggleCurves(header) {
+  header.classList.toggle('open');
+  header.nextElementSibling.classList.toggle('open');
+}
+
+calc();
+</script>
+</body>
+</html>
