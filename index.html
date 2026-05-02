@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>INNSZ-CALC MDC</title>
+<style>
+  :root {
+    --primary: #005b99;
+    --primary-dark: #003f6b;
+    --accent: #e8a020;
+    --bg: #f0f4f8;
+    --card: #ffffff;
+    --text: #1a2535;
+    --muted: #6b7a8d;
+    --border: #d0dae6;
+    --red: #c0392b;
+    --blue: #1565c0;
+    --green: #2e7d32;
+    --orange: #e65100;
+    --purple: #6a1b9a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; -webkit-text-size-adjust: 100%; }
+
+  header { background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%); color: white; padding: 14px 18px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+  header img { height: 48px; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.4)); }
+  header .title-block h1 { font-size: 1.15rem; font-weight: 700; }
+  header .title-block p { font-size: 0.75rem; opacity: 0.85; margin-top: 2px; }
+  header .version { margin-left: auto; background: rgba(255,255,255,0.18); border-radius: 20px; padding: 4px 12px; font-size: 0.73rem; font-weight: 600; white-space: nowrap; }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 18px 14px; }
+
+  /* Patient */
+  .patient-card { background: var(--card); border-radius: 14px; padding: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 18px; }
+  .section-title { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--primary); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .section-title::before { content: ''; display: block; width: 4px; height: 14px; background: var(--primary); border-radius: 2px; }
+  .inputs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; }
+  .input-group { display: flex; flex-direction: column; gap: 5px; }
+  .input-group label { font-size: 0.72rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; }
+  .input-group input, .input-group select { border: 2px solid var(--border); border-radius: 8px; padding: 12px 11px; font-size: 16px; font-weight: 600; color: var(--text); background: #f8fafc; transition: border-color 0.2s, box-shadow 0.2s; }
+  .input-group input { -webkit-appearance: none; appearance: none; }
+  .input-group select { -webkit-appearance: auto; appearance: auto; }
+  .input-group input:focus, .input-group select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,91,153,0.15); background: white; }
+  .input-group .unit { font-size: 0.7rem; color: var(--muted); margin-top: 1px; }
+
+  .computed-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .computed-chip { background: #e8f0fb; border-radius: 20px; padding: 5px 13px; display: flex; gap: 6px; align-items: baseline; }
+  .computed-chip .label { font-size: 0.7rem; color: var(--primary-dark); font-weight: 600; }
+  .computed-chip .value { font-size: 0.92rem; font-weight: 700; color: var(--primary); }
+
+  /* Concentration selector — GLOBAL */
+  .conc-selector-card { background: var(--card); border-radius: 14px; padding: 16px 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 18px; }
+  .conc-selector-card .section-title { margin-bottom: 12px; }
+  .conc-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  .conc-btn { flex: 1; min-width: 60px; min-height: 56px; padding: 11px 8px; border: 2px solid var(--border); border-radius: 10px; background: #f8fafc; cursor: pointer; text-align: center; transition: all 0.18s; touch-action: manipulation; }
+  .conc-btn .mg { font-size: 1.05rem; font-weight: 700; color: var(--text); display: block; }
+  .conc-btn .ml { font-size: 0.7rem; color: var(--muted); display: block; margin-top: 1px; }
+  .conc-btn:hover { border-color: var(--primary); background: #e8f0fb; }
+  .conc-btn.selected { border-color: var(--primary); background: var(--primary); box-shadow: 0 3px 10px rgba(0,91,153,0.35); }
+  .conc-btn.selected .mg { color: white; }
+  .conc-btn.selected .ml { color: rgba(255,255,255,0.8); }
+
+  /* Protocol tabs */
+  .tabs-container { background: var(--card); border-radius: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); overflow: hidden; }
+  .tabs-header { display: flex; overflow-x: auto; scrollbar-width: thin; scrollbar-color: var(--primary) transparent; background: #eef2f7; }
+  .tabs-header::-webkit-scrollbar { height: 3px; }
+  .tabs-header::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 3px; }
+  .tab-btn { flex: none; padding: 13px 15px; border: none; background: transparent; cursor: pointer; font-size: 0.78rem; font-weight: 600; color: var(--muted); white-space: nowrap; transition: all 0.18s; border-bottom: 3px solid transparent; touch-action: manipulation; min-height: 48px; }
+  .tab-btn:hover { color: var(--primary); background: rgba(0,91,153,0.06); }
+  .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); background: white; }
+
+  .tab-content { display: none; padding: 22px 18px; }
+  .tab-content.active { display: block; }
+
+  .protocol-title { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+  .protocol-title h3 { font-size: 1.05rem; font-weight: 700; }
+  .protocol-badge { background: var(--primary); color: white; border-radius: 20px; padding: 3px 12px; font-size: 0.73rem; font-weight: 700; }
+
+  /* Protocol quick params */
+  .params-info { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+  .param-tag { background: #f0f7ff; border: 1px solid #bbd6f0; border-radius: 8px; padding: 7px 12px; }
+  .param-tag .param-label { font-size: 0.68rem; font-weight: 600; color: var(--muted); text-transform: uppercase; }
+  .param-tag .param-value { font-size: 0.9rem; font-weight: 700; color: var(--primary-dark); }
+
+  /* RESULT CARDS — main display */
+  .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 4px; }
+  .result-card { background: #f4f8ff; border: 2px solid #d0dff5; border-radius: 12px; padding: 14px 16px; }
+  .result-card .r-label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 4px; }
+  .result-card .r-value { font-size: 1.6rem; font-weight: 800; color: var(--primary-dark); line-height: 1; }
+  .result-card .r-unit { font-size: 0.78rem; font-weight: 600; color: var(--muted); margin-top: 3px; }
+  .result-card.highlight { background: var(--primary); border-color: var(--primary-dark); }
+  .result-card.highlight .r-label { color: rgba(255,255,255,0.75); }
+  .result-card.highlight .r-value { color: white; }
+  .result-card.highlight .r-unit { color: rgba(255,255,255,0.7); }
+  .result-card.r-red .r-value { color: var(--red); }
+  .result-card.r-blue .r-value { color: var(--blue); }
+  .result-card.r-green .r-value { color: var(--green); }
+
+  /* Full table toggle */
+  .table-toggle { display: flex; align-items: center; gap: 8px; margin-top: 18px; margin-bottom: 10px; cursor: pointer; user-select: none; touch-action: manipulation; min-height: 44px; }
+  .table-toggle span { font-size: 0.78rem; font-weight: 600; color: var(--primary); text-decoration: underline; text-underline-offset: 2px; }
+  .table-toggle .arrow { font-size: 0.7rem; transition: transform 0.2s; }
+  .table-toggle.open .arrow { transform: rotate(180deg); }
+  .full-table { display: none; }
+  .full-table.open { display: block; }
+  .results-table-wrapper { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+  thead { background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: white; }
+  thead th { padding: 9px 10px; text-align: center; font-weight: 600; font-size: 0.8rem; }
+  thead th:first-child { text-align: left; padding-left: 14px; }
+  tbody tr:nth-child(even) { background: #f8fafc; }
+  tbody td { padding: 9px 10px; text-align: center; border-bottom: 1px solid #f0f4f8; }
+  tbody td:first-child { text-align: left; font-weight: 600; color: var(--muted); font-size: 0.78rem; padding-left: 14px; }
+  .col-selected { background: rgba(0,91,153,0.08) !important; }
+  .col-selected-header { background: rgba(255,255,255,0.25) !important; }
+  .val-calc { color: var(--red); font-weight: 700; }
+  .val-input { color: var(--blue); font-weight: 700; }
+  .val-fixed { color: var(--green); font-weight: 700; }
+
+  /* Note boxes */
+  .note-box { background: #fff8e1; border-left: 4px solid var(--accent); border-radius: 0 8px 8px 0; padding: 11px 14px; margin-top: 14px; font-size: 0.83rem; color: var(--text); line-height: 1.5; }
+  .note-box strong { color: var(--orange); }
+  .info-box { background: #e3f2fd; border-left: 4px solid var(--blue); border-radius: 0 8px 8px 0; padding: 11px 14px; margin-top: 14px; font-size: 0.83rem; color: var(--text); line-height: 1.5; }
+
+  /* S/O section */
+  .so-section { margin-top: 22px; padding-top: 18px; border-top: 2px dashed var(--border); }
+  .so-section h4 { font-size: 0.82rem; font-weight: 700; color: var(--orange); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 12px; }
+
+  /* Legend */
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.73rem; color: var(--muted); }
+  .legend-dot { width: 9px; height: 9px; border-radius: 50%; }
+
+  /* Curves section */
+  .curves-section { margin-top: 18px; background: var(--card); border-radius: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); overflow: hidden; }
+  .curves-header { background: linear-gradient(135deg, var(--purple), #9c27b0); color: white; padding: 14px 18px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; touch-action: manipulation; min-height: 48px; }
+  .curves-header h3 { font-size: 0.95rem; font-weight: 700; }
+  .curves-header .arr { font-size: 1.1rem; transition: transform 0.3s; }
+  .curves-header.open .arr { transform: rotate(180deg); }
+  .curves-body { display: none; padding: 18px; }
+  .curves-body.open { display: block; }
+  .curve-card { background: #f9f4ff; border: 1px solid #e1d5f5; border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+  .curve-card h4 { color: var(--purple); font-size: 0.88rem; margin-bottom: 7px; font-weight: 700; }
+  .curve-card p, .curve-card ul { font-size: 0.81rem; line-height: 1.6; color: var(--text); }
+  .curve-card ul { padding-left: 16px; margin-top: 5px; }
+  .phase-row { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
+  .phase-chip { border-radius: 6px; padding: 5px 11px; font-size: 0.76rem; font-weight: 600; }
+  .phase-art { background: #ffebee; color: #c62828; }
+  .phase-port { background: #e8f5e9; color: #2e7d32; }
+  .phase-eq { background: #e3f2fd; color: #1565c0; }
+  .phase-del { background: #fff3e0; color: #e65100; }
+  .phase-nef { background: #f3e5f5; color: #6a1b9a; }
+  .formula-box { background: #f0eafa; border-left: 3px solid var(--purple); border-radius: 6px; padding: 9px 13px; font-size: 0.8rem; font-family: monospace; line-height: 1.8; margin: 8px 0; color: var(--text); }
+  .timing-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 7px; margin: 8px 0; }
+  .timing-item { display: flex; align-items: center; gap: 9px; background: #fff; border: 1px solid #e1d5f5; border-radius: 7px; padding: 7px 10px; }
+  .timing-time { font-weight: 700; font-size: 0.85rem; color: var(--primary); white-space: nowrap; min-width: 58px; }
+  .timing-label { font-size: 0.8rem; color: var(--text); }
+  .ref-table { width: 100%; border-collapse: collapse; font-size: 0.79rem; margin: 6px 0; }
+  .ref-table th { background: var(--primary); color: #fff; padding: 6px 9px; text-align: left; font-weight: 600; }
+  .ref-table td { padding: 5px 9px; border-bottom: 1px solid #e8e0f5; }
+  .ref-table tr:last-child td { border-bottom: none; }
+  .ref-table tr:nth-child(even) td { background: #f9f4ff; }
+  .curve-card ul ul { margin-top: 3px; }
+
+  @media (max-width: 580px) {
+    .container { padding: 12px 10px; }
+    header { padding: 11px 12px; }
+    header img { height: 38px; }
+    .result-card .r-value { font-size: 1.3rem; }
+    .tab-content { padding: 16px 12px; }
+    .conc-btn .mg { font-size: 0.95rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <img src="logo.png" alt="INNSZ" onerror="this.style.display='none'">
+  <div class="title-block">
+    <h1>INNSZ-CALC MDC</h1>
+    <p>Calculadora de Dosis de Contraste Yodado IV</p>
+  </div>
+  <div class="version">v3.0</div>
+</header>
+
+<div class="container">
+
+  <!-- Patient -->
+  <div class="patient-card">
+    <div class="section-title">Datos del Paciente</div>
+    <div class="inputs-grid">
+      <div class="input-group">
+        <label>Peso</label>
+        <input type="text" inputmode="decimal" id="weight" value="70" oninput="calc()" onchange="calc()">
+        <div class="unit">kg</div>
+      </div>
+      <div class="input-group">
+        <label>Talla</label>
+        <input type="text" inputmode="decimal" id="height" value="170" oninput="calc()" onchange="calc()">
+        <div class="unit">cm</div>
+      </div>
+      <div class="input-group">
+        <label>Sexo</label>
+        <select id="sex" onchange="calc()">
+          <option value="M">Masculino</option>
+          <option value="F">Femenino</option>
+        </select>
+      </div>
+    </div>
+    <div class="computed-row" id="computed-row"></div>
+  </div>
+
+  <!-- Concentration Selector -->
+  <div class="conc-selector-card">
+    <div class="section-title">Concentración del MDC</div>
+    <div class="conc-btns">
+      <button class="conc-btn" onclick="selectConc(300,this)"><span class="mg">300</span><span class="ml">mg/ml</span></button>
+      <button class="conc-btn" onclick="selectConc(320,this)"><span class="mg">320</span><span class="ml">mg/ml</span></button>
+      <button class="conc-btn selected" onclick="selectConc(350,this)"><span class="mg">350</span><span class="ml">mg/ml</span></button>
+      <button class="conc-btn" onclick="selectConc(370,this)"><span class="mg">370</span><span class="ml">mg/ml</span></button>
+      <button class="conc-btn" onclick="selectConc(400,this)"><span class="mg">400</span><span class="ml">mg/ml</span></button>
+    </div>
+  </div>
+
+  <!-- Protocol Tabs -->
+  <div class="tabs-container">
+    <div class="tabs-header">
+      <button class="tab-btn active" onclick="showTab('tep',this)">TEP</button>
+      <button class="tab-btn" onclick="showTab('tep-piernas',this)">TEP + Piernas</button>
+      <button class="tab-btn" onclick="showTab('tep-obeso',this)">TEP Obeso</button>
+      <button class="tab-btn" onclick="showTab('higado',this)">Hígado / Páncreas</button>
+      <button class="tab-btn" onclick="showTab('urotc',this)">UROTc</button>
+      <button class="tab-btn" onclick="showTab('torax',this)">Tórax–Abd Venoso</button>
+      <button class="tab-btn" onclick="showTab('abdomen',this)">Abdomen Venoso</button>
+    </div>
+
+    <!-- ===== TEP ===== -->
+    <div id="tab-tep" class="tab-content active">
+      <div class="protocol-title">
+        <h3>Tromboembolismo Pulmonar (TEP)</h3>
+        <span class="protocol-badge">160 mg I/kg · 7.5 s</span>
+      </div>
+      <div class="params-info">
+        <div class="param-tag"><div class="param-label">Dosis</div><div class="param-value" style="color:var(--blue);font-weight:700">160 mg I/kg</div></div>
+        <div class="param-tag"><div class="param-label">Tiempo iny.</div><div class="param-value" style="color:var(--blue);font-weight:700">7.5 s</div></div>
+        <div class="param-tag"><div class="param-label">Dosis total I</div><div class="param-value" id="tep-total" style="color:var(--red);font-weight:700">—</div></div>
+      </div>
+      <div id="tep-cards" class="result-grid"></div>
+      <div class="table-toggle" onclick="toggleTable('tep-table',this)">
+        <span>Ver tabla completa</span><span class="arrow">▼</span>
+      </div>
+      <div id="tep-table" class="full-table">
+        <div class="results-table-wrapper">
+          <table><thead id="tep-thead"></thead><tbody id="tep-body"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TEP PIERNAS ===== -->
+    <div id="tab-tep-piernas" class="tab-content">
+      <div class="protocol-title">
+        <h3>TEP + Angiografía de Piernas</h3>
+        <span class="protocol-badge">160 mg I/kg · 7.5 s</span>
+      </div>
+      <div class="params-info">
+        <div class="param-tag"><div class="param-label">Dosis</div><div class="param-value" style="color:var(--blue);font-weight:700">160 mg I/kg</div></div>
+        <div class="param-tag"><div class="param-label">Tiempo iny.</div><div class="param-value" style="color:var(--blue);font-weight:700">7.5 s</div></div>
+        <div class="param-tag"><div class="param-label">Dosis total I</div><div class="param-value" id="tepleg-total" style="color:var(--red);font-weight:700">—</div></div>
+      </div>
+      <div id="tepleg-cards" class="result-grid"></div>
+      <div class="table-toggle" onclick="toggleTable('tepleg-table',this)">
+        <span>Ver tabla completa</span><span class="arrow">▼</span>
+      </div>
+      <div id="tepleg-table" class="full-table">
+        <div class="results-table-wrapper">
+          <table><thead id="tepleg-thead"></thead><tbody id="tepleg-body"></tbody></table>
+        </div>
+      </div>
+      <div class="note-box">
+        <strong>Protocolo inyector — Piernas:</strong><br>
+        1. Programar bolo de TEP (volumen MDC al caudal calculado) + chaser de agua al <strong>mismo caudal</strong> con <strong>30 ml SS</strong>.<br>
+        2. Repetir volumen calculado de MDC a <strong>3.0 ml/s</strong> + <strong>20 ml SS</strong>.
+      </div>
+    </div>
+
+    <!-- ===== TEP OBESO ===== -->
+    <div id="tab-tep-obeso" class="tab-content">
+      <div class="protocol-title">
+        <h3>TEP — Paciente Obeso</h3>
+        <span class="protocol-badge">160 mg I/kg LBW · 7.5 s</span>
+      </div>
+      <div class="params-info">
+        <div class="param-tag"><div class="param-label">Dosis</div><div class="param-value" style="color:var(--blue);font-weight:700">160 mg I/kg (LBW)</div></div>
+        <div class="param-tag"><div class="param-label">Tiempo iny.</div><div class="param-value" style="color:var(--blue);font-weight:700">7.5 s</div></div>
+        <div class="param-tag"><div class="param-label">Peso magro</div><div class="param-value" id="tepo-lbw" style="color:var(--red);font-weight:700">—</div></div>
+        <div class="param-tag"><div class="param-label">Dosis I (LBW)</div><div class="param-value" id="tepo-total" style="color:var(--red);font-weight:700">—</div></div>
+        <div class="param-tag"><div class="param-label">Dosis I (real)</div><div class="param-value" id="tepo-total-real" style="color:var(--muted);font-weight:700">—</div></div>
+      </div>
+      <div id="tepo-cards" class="result-grid"></div>
+      <div class="table-toggle" onclick="toggleTable('tepo-table',this)">
+        <span>Ver tabla completa</span><span class="arrow">▼</span>
+      </div>
+      <div id="tepo-table" class="full-table">
+        <div class="results-table-wrapper">
+          <table><thead id="tepo-thead"></thead><tbody id="tepo-body"></tbody></table>
+        </div>
+      </div>
+      <div class="info-box">
+        Volumen e inyección sobre <strong>Peso Magro Janmahasatian</strong>. El Flujo I (peso real) es referencia para programación del inyector.
+      </div>
+    </div>
+
+    <!-- ===== HÍGADO / PÁNCREAS ===== -->
+    <div id="tab-higado" class="tab-content">
+      <div class="protocol-title">
+        <h3>Hígado / Páncreas / Entero-TC</h3>
+        <span class="protocol-badge">580 mg I/kg · 30 s</span>
+      </div>
+      <div class="params-info">
+        <div class="param-tag"><div class="param-label">Dosis</div><div class="param-value" style="color:var(--blue);font-weight:700">580 mg I/kg</div></div>
+        <div class="param-tag"><div class="param-label">Tiempo iny.</div><div class="param-value" style="color:var(--blue);font-weight:700">30 s</div></div>
+        <div class="param-tag"><div class="param-label">Flujo I/s</div><div class="param-value" id="hig-flujo" style="color:var(--red);font-weight:700">—</div></div>
+        <div class="param-tag"><div class="param-label">Dosis total I</div><div class="param-value" id="hig-total" style="color:var(--red);font-weight:700">—</div></div>
+      </div>
+      <div id="hig-cards" class="result-grid"></div>
+      <div class="table-toggle" onclick="toggleTable('hig-table',this)">
+        <span>Ver tabla completa</span><span class="arrow">▼</span>
+      </div>
+      <div id="hig-table" class="full-table">
+        <div class="results-table-wrapper">
+          <table><thead id="hig-thead"></thead><tbody id="hig-body"></tbody></table>
+        </div>
+      </div>
+
+      <div class="so-section" id="hig-so-section">
+        <h4 id="hig-so-title">Ajuste Sobrepeso / Obesidad (IMC 25–30)</h4>
+        <div class="params-info" style="margin-top:10px">
+          <div class="param-tag"><div class="param-label">Peso calculado</div><div class="param-value" id="hig-so-peso" style="color:var(--red);font-weight:700">—</div></div>
+          <div class="param-tag"><div class="param-label">Dosis total I</div><div class="param-value" id="hig-so-total" style="color:var(--red);font-weight:700">—</div></div>
+        </div>
+        <div id="hig-so-cards" class="result-grid" style="margin-top:12px"></div>
+        <div class="table-toggle" onclick="toggleTable('hig-so-table',this)">
+          <span>Ver tabla S/O completa</span><span class="arrow">▼</span>
+        </div>
+        <div id="hig-so-table" class="full-table">
+          <div class="results-table-wrapper">
+            <table><thead id="hig-so-thead"></thead><tbody id="hig-so-body"></tbody></table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== UROTc ===== -->
+    <div id="tab-urotc" class="tab-content">
+      <div class="protocol-title">
+        <h3>Uro-TC (UROTc)</h3>
+        <span class="protocol-badge">580 mg I/kg · 2 bolos</span>
+      </div>
+      <div class="params-info">
+        <div class="param-tag"><div class="param-label">Dosis total</div><div class="param-value" style="color:var(--blue);font-weight:700">580 mg I/kg</div></div>
+        <div class="param-tag"><div class="param-label">1er bolo</div><div class="param-value" style="color:var(--blue);font-weight:700">70% · 20 s</div></div>
+        <div class="param-tag"><div class="param-label">2° bolo</div><div class="param-value" style="color:var(--blue);font-weight:700">30% del total</div></div>
+        <div class="param-tag"><div class="param-label">Dosis total I</div><div class="param-value" id="uro-total" style="color:var(--red);font-weight:700">—</div></div>
+      </div>
+      <p style="font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:10px">Primer Bolo — 70%</p>
+      <div id="uro-cards1" class="result-grid"></div>
+      <p style="font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin:18px 0 10px">Segundo Bolo — 30%</p>
+      <div id="uro-cards2" class="result-grid"></div>
+      <div class="table-toggle" onclick="toggleTable('uro-table',this)">
+        <span>Ver tabla completa</span><span class="arrow">▼</span>
+      </div>
+      <div id="uro-table" class="full-table">
+        <div class="results-table-wrapper">
+          <table><thead id="uro-thead"></thead><tbody id="uro-body"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TÓRAX-ABDOMEN VENOSO ===== -->
+    <div id="tab-torax" class="tab-content">
+      <div class="protocol-title">
+        <h3>Tórax–Abdomen Venoso</h3>
+        <span class="protocol-badge">380 mg I/kg · 20 s</span>
+      </div>
+      <div class="params-info">
+        <div class="param-tag"><div class="param-label">Dosis</div><div class="param-value" style="color:var(--blue);font-weight:700">380 mg I/kg</div></div>
+        <div class="param-tag"><div class="param-label">Tiempo iny.</div><div class="param-value" style="color:var(--blue);font-weight:700">20 s</div></div>
+        <div class="param-tag"><div class="param-label">Flujo I/s</div><div class="param-value" id="tor-flujo" style="color:var(--red);font-weight:700">—</div></div>
+        <div class="param-tag"><div class="param-label">Dosis total I</div><div class="param-value" id="tor-total" style="color:var(--red);font-weight:700">—</div></div>
+      </div>
+      <div id="tor-cards" class="result-grid"></div>
+      <div class="table-toggle" onclick="toggleTable('tor-table',this)">
+        <span>Ver tabla completa</span><span class="arrow">▼</span>
+      </div>
+      <div id="tor-table" class="full-table">
+        <div class="results-table-wrapper">
+          <table><thead id="tor-thead"></thead><tbody id="tor-body"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== ABDOMEN VENOSO ===== -->
+    <div id="tab-abdomen" class="tab-content">
+      <div class="protocol-title">
+        <h3>Abdomen Venoso (basado en SCT)</h3>
+        <span class="protocol-badge">15 750 mg I/m² · 2.5 ml/s</span>
+      </div>
+      <div class="params-info">
+        <div class="param-tag"><div class="param-label">Dosis</div><div class="param-value" style="color:var(--blue);font-weight:700">15 750 mg I/m²</div></div>
+        <div class="param-tag"><div class="param-label">Caudal fijo</div><div class="param-value" style="color:var(--blue);font-weight:700">2.5 ml/s</div></div>
+        <div class="param-tag"><div class="param-label">SCT DuBois</div><div class="param-value" id="abd-bsa" style="color:var(--red);font-weight:700">—</div></div>
+        <div class="param-tag"><div class="param-label">Dosis total I</div><div class="param-value" id="abd-total" style="color:var(--red);font-weight:700">—</div></div>
+      </div>
+      <div id="abd-cards" class="result-grid"></div>
+      <div class="table-toggle" onclick="toggleTable('abd-table',this)">
+        <span>Ver tabla completa</span><span class="arrow">▼</span>
+      </div>
+      <div id="abd-table" class="full-table">
+        <div class="results-table-wrapper">
+          <table><thead id="abd-thead"></thead><tbody id="abd-body"></tbody></table>
+        </div>
+      </div>
+      <div class="note-box">
+        Caudal <strong>fijo 2.5 ml/s</strong>. El tiempo de inyección y el flujo I (mg/s) varían con la concentración: 750 / 800 / 875 / 925 / 1000 mg I/s.
+      </div>
+    </div>
+
+  </div><!-- /tabs-container -->
+
+  <!-- Enhancement Curves -->
+  <div class="curves-section">
+    <div class="curves-header" onclick="toggleCurves(this)">
+      <h3>📈 Curvas de Realce y Referencia Técnica</h3>
+      <span class="arr">▼</span>
+    </div>
+    <div class="curves-body">
+
+      <div class="curve-card">
+        <h4>Principios del Realce (CIRTACI / SERAM 2024)</h4>
+        <p>El realce vascular depende principalmente del <strong>flujo de yodo (DAI, g I/s)</strong>; el realce parenquimatoso depende de la <strong>carga total de yodo (g I/kg)</strong>. Estos son los dos parámetros clave a optimizar según el tipo de estudio.</p>
+        <div class="formula-box">
+          DAI (g I/s) = Caudal (ml/s) × Concentración (g/ml)<br>
+          Carga I (g I/kg) = Volumen (ml) × Concentración (g/ml) / Peso (kg)<br>
+          Volumen (ml) = [Carga (g/kg) × Peso (kg)] / Concentración (g/ml)
+        </div>
+        <ul>
+          <li>Mayor DAI → pico vascular más alto y más precoz.</li>
+          <li>Igual dosis total: mayor concentración = menor volumen + mayor DAI = mejor realce arterial.</li>
+          <li>Para vasos con acceso venoso deficiente: aumentar concentración para mantener el DAI con menor caudal.</li>
+          <li>Suero fisiológico post-inyección (30–40 ml): empuja el bolo residual, optimiza la opacificación y reduce artefactos.</li>
+          <li>Contraste calentado a 37 °C: reduce viscosidad ~25–30%, permite mayor caudal con menor presión de inyección.</li>
+        </ul>
+      </div>
+
+      <div class="curve-card">
+        <h4>Tiempos Fisiológicos de Opacificación (vía venosa)</h4>
+        <p style="margin-bottom:6px;font-size:0.82rem;color:var(--muted)">Valores medios orientativos — varían según gasto cardíaco, peso y estado fisiológico. t = 0 = inicio de inyección.</p>
+        <div class="timing-grid">
+          <div class="timing-item"><span class="timing-time">10–12 s</span><span class="timing-label">Tronco de la arteria pulmonar</span></div>
+          <div class="timing-item"><span class="timing-time">17–22 s</span><span class="timing-label">Ventrículo izquierdo / cayado aórtico</span></div>
+          <div class="timing-item"><span class="timing-time">25–35 s</span><span class="timing-label">Aorta abdominal (fase arterial)</span></div>
+          <div class="timing-item"><span class="timing-time">40–45 s</span><span class="timing-label">Miembros inferiores</span></div>
+          <div class="timing-item"><span class="timing-time">60–75 s</span><span class="timing-label">Fase portal hepática</span></div>
+          <div class="timing-item"><span class="timing-time">90–100 s</span><span class="timing-label">Fase nefrográfica</span></div>
+          <div class="timing-item"><span class="timing-time">3–5 min</span><span class="timing-label">Fase tardía / excretora</span></div>
+        </div>
+        <p style="margin-top:8px;font-size:0.82rem">Bolus tracking: colocar ROI en región de interés; umbral 80–100 UH para estudios vasculares, 100–150 UH en aorta para fase arterial hepática.</p>
+      </div>
+
+      <div class="curve-card">
+        <h4>Fases de Realce — Aplicaciones Clínicas</h4>
+        <div class="phase-row">
+          <div class="phase-chip phase-art">Arterial precoz: 15–25 s</div>
+          <div class="phase-chip phase-art" style="background:#e8624a">Arterial tardía: 35–45 s</div>
+          <div class="phase-chip phase-port">Portal: 60–80 s</div>
+          <div class="phase-chip phase-nef">Nefrográfica: 80–120 s</div>
+          <div class="phase-chip phase-eq">Equilibrio: 120–180 s</div>
+          <div class="phase-chip phase-del">Tardía: 3–5 min</div>
+        </div>
+        <ul style="margin-top:10px">
+          <li><strong>Arterial precoz (15–25 s):</strong> angio-TC aórtico, arterias pulmonares (TEP). DAI clave.</li>
+          <li><strong>Arterial tardía hepática (35–45 s):</strong> lesiones hipervasculares (HCC, adenoma, metástasis de GIST/tumores neuroendocrinos). Umbral ~150 UH + retardo 20–30 s.</li>
+          <li><strong>Pancreática (35–45 s):</strong> máxima diferenciación frente a adenocarcinoma ductal (páncreas hiperdenso, tumor hipodenso).</li>
+          <li><strong>Portal (60–80 s):</strong> máximo realce hepático (≥50 UH sobre basal); detecta metástasis hipovasculares, estadificación oncológica.</li>
+          <li><strong>Nefrográfica (80–120 s):</strong> tumores renales, diferenciación corteza-médula.</li>
+          <li><strong>Equilibrio (120–180 s):</strong> lesiones de realce tardío (colangiocarcinoma, hepatocarcinoma con washout).</li>
+          <li><strong>Excretora (3–10 min):</strong> opacificación del sistema colector; tumores uroteliales, fístulas.</li>
+        </ul>
+      </div>
+
+      <div class="curve-card">
+        <h4>Flujo de Yodo Recomendado por Estudio (120 kV)</h4>
+        <p style="margin-bottom:6px;font-size:0.82rem;color:var(--muted)">Criterio clave para vasculares: DAI en g I/s. Fuente: CIRTACI Vasculaire / SERAM 2024.</p>
+        <table class="ref-table">
+          <thead><tr><th>Estudio</th><th>DAI objetivo</th><th>Caudal típico (350 mg/ml)</th></tr></thead>
+          <tbody>
+            <tr><td>TEP (embolismo pulmonar)</td><td>1.2–1.6 g I/s</td><td>3.4–4.6 ml/s</td></tr>
+            <tr><td>Angio-TC aorta / periferia</td><td>1.2–1.6 g I/s</td><td>3.4–4.6 ml/s</td></tr>
+            <tr><td>Angio-TC coronario</td><td>~2.0 g I/s</td><td>~5.7 ml/s</td></tr>
+            <tr><td>Hígado / páncreas (oncológico)</td><td>Carga 0.5 g I/kg · t=30 s</td><td>Variable por peso</td></tr>
+            <tr><td>Abdomen venoso (oncológico)</td><td>Carga 0.5 g I/kg · t=30 s</td><td>Variable por BSA</td></tr>
+          </tbody>
+        </table>
+        <p style="margin-top:8px;font-size:0.82rem"><strong>Caudal por concentración para DAI 1.4 g I/s:</strong> 300 mg/ml → 4.7 ml/s · 320 → 4.4 · 350 → 4.0 · 370 → 3.8 · 400 → 3.5 ml/s.</p>
+      </div>
+
+      <div class="curve-card">
+        <h4>TEP — Embolismo Pulmonar (Protocolo Optimizado)</h4>
+        <ul>
+          <li>La arteria pulmonar se opacifica en <strong>10–12 s</strong> → tiempo máximo de inyección efectiva: <strong>10 s</strong>.</li>
+          <li>Bolus tracking en tronco pulmonar: umbral 80–100 UH, disparo inmediato (sin retardo adicional).</li>
+          <li>El detector tarda 4–7 s en iniciar la adquisición → el bolo llega al tronco pulmonar al inicio del escaneo.</li>
+          <li>Acceso venoso proximal (antebraquial proximal o fosa antecubital); catéter calibre verde (18G) cuando sea posible.</li>
+          <li>Apnea simple — <strong>SIN maniobra de Valsalva</strong> (Valsalva retrasa el retorno venoso y falsea el estudio).</li>
+          <li><strong>Pacientes especiales:</strong></li>
+          <ul>
+            <li>Ancianos (↓ gasto cardíaco): usar DAI 1.2–1.4 g I/s; pico retardado pero más elevado.</li>
+            <li>Deportistas / embarazadas (↑ gasto cardíaco): aumentar DAI a 1.6–1.8 g I/s.</li>
+            <li>Obesos (120–140 kV): DAI 1.6–2.0 g I/s para compensar mayor kilovoltaje.</li>
+          </ul>
+          <li>En obesidad moderada (hasta IMC 35): usar Peso Magro (Janmahasatian); metaanálisis confirma igual calidad diagnóstica con <strong>menor volumen inyectado</strong> (Gulizia et al., EJR 2024).</li>
+        </ul>
+      </div>
+
+      <div class="curve-card">
+        <h4>Hígado y Páncreas — Realce Oncológico</h4>
+        <ul>
+          <li>Dosis estándar a 120 kV: <strong>0.5 g I/kg</strong> (= 500 mg I/kg). Tiempo de inyección 30 s.</li>
+          <li>Objetivo fase portal: <strong>incremento ≥ 50 UH</strong> sobre basal hepático; si TC directo: hígado ≥ 110 UH.</li>
+          <li>Si esteatosis hepática: verificar bazo ≥ 120 UH (bazo más confiable que hígado).</li>
+          <li>La grasa corporal es poco perfundida → en obesos, calcular por BSA evita sobredosis: Dosis (g I) = BSA × 18.6 g I/m² (120 kV).</li>
+          <li>Protocolo INNSZ Hígado/Páncreas: 580 mg I/kg · Peso ajustado S/O en 30 s.</li>
+          <li>Reducción de kV: a 100 kV usar 0.4 g I/kg (o BSA × 15 g I/m²); a 80 kV: 0.3 g I/kg (solo en normo-peso).</li>
+        </ul>
+        <div class="formula-box">
+          Dosis (g I) = BSA (m²) × 18.6 &nbsp;→&nbsp; 120 kV<br>
+          Dosis (g I) = BSA (m²) × 15.0 &nbsp;→&nbsp; 100 kV<br>
+          Dosis (g I) = BSA (m²) × 11.0 &nbsp;→&nbsp; &nbsp;80 kV (solo normopeso)
+        </div>
+      </div>
+
+      <div class="curve-card">
+        <h4>Uro-TC — Técnica de Doble Bolo</h4>
+        <ul>
+          <li><strong>1er bolo (70% de la dosis):</strong> produce fase corticomedular (25–40 s) y <strong>nefrográfica (80–120 s)</strong>; mejor detección de tumores renales sólidos.</li>
+          <li><strong>2° bolo (30% de la dosis):</strong> administrado inmediatamente tras el 1er bolo; se excreta más tardíamente, opacificando el <strong>sistema colector (excretora, 5–10 min)</strong>.</li>
+          <li>Una sola adquisición tardía (5–10 min) captura simultáneamente la fase nefrográfica del 2° bolo + excretora del 1er bolo.</li>
+          <li>Indicaciones: hematuria sin causa aparente, tumores uroteliales del tracto superior, evaluación post-cirugía ureteral.</li>
+          <li>Adquisición diferida (10–15 min): útil en obstrucción o función renal asimétrica.</li>
+        </ul>
+      </div>
+
+      <div class="curve-card">
+        <h4>Factores que Modifican el Realce</h4>
+        <ul>
+          <li><strong>↓ Gasto cardíaco</strong> (insuficiencia cardíaca, ancianos): pico retardado y más alto; aumentar el retardo de adquisición; en TEP vigilar que el bolo cubra toda la arteria pulmonar en el momento de la adquisición.</li>
+          <li><strong>↑ Gasto cardíaco</strong> (deportistas, embarazo, anemia): pico precoz y menor; puede requerirse mayor DAI.</li>
+          <li><strong>Obesidad</strong>: volumen de distribución aumentado; grasa poco perfundida → dosis basada en TBW sobreestima. Usar LBW (vasculares) o BSA (parenquimatosos). Reducción de dosis ~18% con BSA vs TBW en obesos.</li>
+          <li><strong>Reducción de kV</strong>: acerca el espectro al K-edge del yodo (33.2 keV) → mayor coeficiente de atenuación → misma calidad con menos contraste. Reducción 20 kV ≈ reducción 20% de dosis de yodo y radiación.</li>
+          <li><strong>TFG &lt; 30 ml/min</strong>: evaluar riesgo-beneficio; hidratación previa; dosis mínima necesaria.</li>
+          <li><strong>Temperatura MDC 37 °C</strong>: reduce viscosidad ~25–30%; permite mayor caudal con menor presión de inyección.</li>
+        </ul>
+      </div>
+
+      <div class="curve-card">
+        <h4>Criterios de Calidad Diagnóstica (CIRTACI / SERAM 2024)</h4>
+        <table class="ref-table">
+          <thead><tr><th>Estructura / Fase</th><th>Criterio mínimo</th><th>Óptimo</th></tr></thead>
+          <tbody>
+            <tr><td>Aorta (fase arterial)</td><td>≥ 300 UH</td><td>&gt; 350 UH</td></tr>
+            <tr><td>Arterias pulmonares (TEP)</td><td>≥ 200 UH (segmentarias)</td><td>&gt; 250 UH</td></tr>
+            <tr><td>Arterias coronarias</td><td>≥ 325 UH</td><td>350–400 UH</td></tr>
+            <tr><td>Parénquima hepático (portal)</td><td>Δ ≥ 50 UH sobre basal</td><td>Abs. ≥ 110 UH</td></tr>
+            <tr><td>Bazo (si esteatosis hepática)</td><td>≥ 120 UH (portal)</td><td>—</td></tr>
+            <tr><td>Corteza renal (nefrográfica)</td><td>≥ 200 UH</td><td>&gt; 250 UH</td></tr>
+            <tr><td>Páncreas (fase pancreática)</td><td>Δ ≥ 50 UH sobre basal</td><td>≥ 100 UH</td></tr>
+          </tbody>
+        </table>
+        <p style="margin-top:8px;font-size:0.82rem">Si el criterio no se alcanza: revisar timing, dosis, DAI o estado venoso del acceso. Si se supera ampliamente: considerar reducción de dosis en próximos estudios del mismo paciente.</p>
+      </div>
+
+      <div class="curve-card">
+        <h4>Optimización por Kilovoltaje (Guía CIRTACI)</h4>
+        <table class="ref-table">
+          <thead><tr><th>kV</th><th>Carga I (g I/kg)</th><th>Carga I (g I/m² BSA)</th><th>Pacientes</th></tr></thead>
+          <tbody>
+            <tr><td>120 kV</td><td>0.5 g I/kg</td><td>18.6 g I/m²</td><td>Todos; obesos preferir BSA</td></tr>
+            <tr><td>100 kV</td><td>0.4 g I/kg</td><td>15.0 g I/m²</td><td>Peso normal–sobrepeso moderado</td></tr>
+            <tr><td>80 kV</td><td>0.3 g I/kg</td><td>11.0 g I/m²</td><td>Solo normopeso (no obesos)</td></tr>
+          </tbody>
+        </table>
+        <ul style="margin-top:8px">
+          <li>Reducción de 20 kV ≈ reducción ~20% de dosis de yodo y de radiación.</li>
+          <li>Reducir kV en escalones del 10% validando CQ a cada paso antes de continuar.</li>
+          <li>Combinar con reconstrucción iterativa o IA para compensar aumento de ruido.</li>
+          <li>DAI vascular a 100 kV: 1.0–1.3 g I/s · a 80 kV: 0.8–1.0 g I/s.</li>
+        </ul>
+      </div>
+
+      <div class="curve-card" style="background:var(--bg2);border-left:3px solid var(--primary)">
+        <h4>Referencias</h4>
+        <ul style="font-size:0.79rem;color:var(--muted)">
+          <li>SFR-CIRTACI. Optimisation des doses de PC en TDM Oncologie &amp; Vasculaire (v5.3, 2020).</li>
+          <li>Gulizia M et al. Adjustments of ICM using lean body weight for abdominopelvic CT: meta-analysis. <em>Eur J Radiol.</em> 2024;178:111631.</li>
+          <li>Arenas-Jiménez JJ et al. Optimising the use of iodinated CAs in CT scans. <em>Radiología.</em> 2024;66:S15–S28.</li>
+          <li>Cobos Alonso J et al. Introducción a los contrastes yodados. <em>Radiología.</em> 2024;66:S3–S14.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:20px;padding-bottom:20px;color:var(--muted);font-size:0.73rem">
+    INNSZ-CALC MDC v3.0 · Instituto Nacional de Ciencias Médicas y Nutrición Salvador Zubirán<br>
+    <em>Uso exclusivo para personal médico capacitado. Verificar con criterio clínico individual.</em>
+  </div>
+
+</div>
+
+<script>
+const CONCS = [300, 320, 350, 370, 400];
+const ABD_FLUJO_I = [750, 800, 875, 925, 1000];
+let selectedConc = 350;
+let selectedConcIdx = 2;
+
+function fmt(n, dec=1) {
+  if (n === null || n === undefined || isNaN(n) || !isFinite(n)) return '—';
+  return n.toFixed(dec);
+}
+
+function bsaDuBois(w, h) {
+  return 0.007184 * Math.pow(h, 0.725) * Math.pow(w, 0.425);
+}
+
+function lbwJanmahasatian(w, bmi, sex) {
+  return sex === 'M'
+    ? 9270 * w / (6680 + 216 * bmi)
+    : 9270 * w / (8780 + 244 * bmi);
+}
+
+function getInputs() {
+  const w = parseFloat(document.getElementById('weight').value) || 0;
+  const h = parseFloat(document.getElementById('height').value) || 0;
+  const sex = document.getElementById('sex').value;
+  const h_m = h / 100;
+  const bmi = h_m > 0 ? w / (h_m * h_m) : 0;
+  const bsa = (w > 0 && h > 0) ? bsaDuBois(w, h) : 0;
+  const lbw = (w > 0 && bmi > 0) ? lbwJanmahasatian(w, bmi, sex) : 0;
+  return { w, h, sex, h_m, bmi, bsa, lbw };
+}
+
+function selectConc(c, btn) {
+  selectedConc = c;
+  selectedConcIdx = CONCS.indexOf(c);
+  document.querySelectorAll('.conc-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  calc();
+}
+
+/* Build result cards for selected concentration */
+function buildCards(rows, container) {
+  // rows = [{label, values:[5], cls}]
+  const el = document.getElementById(container);
+  if (!el) return;
+  el.innerHTML = rows.map(r => {
+    const v = r.values[selectedConcIdx];
+    const cls = r.cls === 'val-input' ? 'r-blue' : (r.cls === 'val-fixed' ? 'r-green' : '');
+    return `<div class="result-card ${cls}">
+      <div class="r-label">${r.label}</div>
+      <div class="r-value">${v}</div>
+      <div class="r-unit">${r.unit || ''}</div>
+    </div>`;
+  }).join('');
+}
+
+/* Build full table with highlight on selected column */
+function buildTable(rows, theadId, tbodyId) {
+  const thead = document.getElementById(theadId);
+  const tbody = document.getElementById(tbodyId);
+  if (!thead || !tbody) return;
+
+  thead.innerHTML = `<tr>
+    <th>Parámetro</th>
+    ${CONCS.map((c, i) => `<th class="${i===selectedConcIdx?'col-selected-header':''}">${c} mg/ml</th>`).join('')}
+  </tr>`;
+
+  tbody.innerHTML = rows.map(r => `<tr>
+    <td>${r.label}</td>
+    ${r.values.map((v,i) => `<td class="${i===selectedConcIdx?'col-selected':''}"><span class="${r.cls||'val-calc'}">${v}</span></td>`).join('')}
+  </tr>`).join('');
+}
+
+function makeRows(totalI, injTime, w, extraRows) {
+  const rows = [
+    { label: 'Volumen (ml)', values: CONCS.map(c => fmt(totalI/c)), unit: 'ml', cls: 'val-calc' },
+    { label: 'Caudal (ml/s)', values: CONCS.map(c => fmt(totalI/c/injTime,2)), unit: 'ml/s', cls: 'val-calc' },
+    { label: 'Flujo I (mg/s)', values: CONCS.map(_ => fmt(totalI/injTime,0)), unit: 'mg I/s', cls: 'val-input' },
+    { label: 'Flujo I/kg/s', values: CONCS.map(_ => fmt(totalI/injTime/w,2)), unit: 'mg I/kg/s', cls: 'val-calc' },
+  ];
+  return extraRows ? [...rows, ...extraRows] : rows;
+}
+
+function calc() {
+  const { w, h, sex, h_m, bmi, bsa, lbw } = getInputs();
+
+  // Computed chips
+  document.getElementById('computed-row').innerHTML = `
+    <div class="computed-chip"><span class="label">SCT DuBois</span><span class="value">${fmt(bsa,3)} m²</span></div>
+    <div class="computed-chip"><span class="label">IMC</span><span class="value">${fmt(bmi,1)} kg/m²</span></div>
+    <div class="computed-chip"><span class="label">Peso Magro ${sex==='M'?'♂':'♀'}</span><span class="value">${fmt(lbw,2)} kg</span></div>
+  `;
+
+  // ---- TEP ----
+  const tepTotal = 160 * w;
+  document.getElementById('tep-total').textContent = fmt(tepTotal,0) + ' mg I';
+  const tepRows = makeRows(tepTotal, 7.5, w);
+  buildCards(tepRows, 'tep-cards');
+  buildTable(tepRows, 'tep-thead', 'tep-body');
+
+  // ---- TEP PIERNAS ----
+  document.getElementById('tepleg-total').textContent = fmt(tepTotal,0) + ' mg I';
+  buildCards(tepRows, 'tepleg-cards');
+  buildTable(tepRows, 'tepleg-thead', 'tepleg-body');
+
+  // ---- TEP OBESO ----
+  const tepoTotal = 160 * lbw;
+  const tepoTotalReal = 160 * w;
+  document.getElementById('tepo-lbw').textContent = fmt(lbw,2) + ' kg';
+  document.getElementById('tepo-total').textContent = fmt(tepoTotal,0) + ' mg I';
+  document.getElementById('tepo-total-real').textContent = fmt(tepoTotalReal,0) + ' mg I';
+  const tepoRows = [
+    { label: 'Volumen (ml)', values: CONCS.map(c => fmt(tepoTotal/c)), unit: 'ml', cls: 'val-calc' },
+    { label: 'Caudal (ml/s)', values: CONCS.map(c => fmt(tepoTotal/c/7.5,2)), unit: 'ml/s', cls: 'val-calc' },
+    { label: 'Flujo I — LBW (mg/s)', values: CONCS.map(_ => fmt(tepoTotal/7.5,0)), unit: 'mg I/s', cls: 'val-calc' },
+    { label: 'Flujo I — peso real (mg/s)', values: CONCS.map(_ => fmt(tepoTotalReal/7.5,0)), unit: 'mg I/s', cls: 'val-input' },
+  ];
+  buildCards(tepoRows, 'tepo-cards');
+  buildTable(tepoRows, 'tepo-thead', 'tepo-body');
+
+  // ---- HÍGADO / PÁNCREAS ----
+  const higTotal = 580 * w;
+  const higFlujo = higTotal / 30;
+  document.getElementById('hig-total').textContent = fmt(higTotal,0) + ' mg I';
+  document.getElementById('hig-flujo').textContent = fmt(higFlujo,1) + ' mg I/s';
+  const higRows = makeRows(higTotal, 30, w);
+  buildCards(higRows, 'hig-cards');
+  buildTable(higRows, 'hig-thead', 'hig-body');
+
+  // S/O
+  const soWeight = lbw + (w - lbw) * 1.15;
+  const soTotal = 580 * soWeight;
+  document.getElementById('hig-so-peso').textContent = fmt(soWeight,2) + ' kg';
+  document.getElementById('hig-so-total').textContent = fmt(soTotal,0) + ' mg I';
+  const soRows = makeRows(soTotal, 30, soWeight);
+  buildCards(soRows, 'hig-so-cards');
+  buildTable(soRows, 'hig-so-thead', 'hig-so-body');
+  const soSection = document.getElementById('hig-so-section');
+  const soTitle = document.getElementById('hig-so-title');
+  if (bmi > 25 && bmi <= 30) {
+    soSection.style.opacity = '1'; soTitle.style.color = 'var(--orange)';
+    soTitle.textContent = '⚠ Ajuste S/O — APLICAR (IMC ' + fmt(bmi,1) + ')';
+  } else if (bmi > 30) {
+    soSection.style.opacity = '1'; soTitle.style.color = 'var(--red)';
+    soTitle.textContent = '⚠ IMC > 30 — Revisar protocolo con especialista';
+  } else {
+    soSection.style.opacity = '0.4';
+    soTitle.style.color = 'var(--muted)';
+    soTitle.textContent = 'Ajuste S/O (IMC 25–30) — No aplica para este paciente';
+  }
+
+  // ---- UROTc ----
+  const uroTotal = 580 * w;
+  const uro1 = uroTotal * 0.70;
+  const uro2 = uroTotal * 0.30;
+  document.getElementById('uro-total').textContent = fmt(uroTotal,0) + ' mg I';
+  const uro1Rows = [
+    { label: 'Volumen 1er bolo (ml)', values: CONCS.map(c => fmt(uro1/c)), unit: 'ml', cls: 'val-calc' },
+    { label: 'Caudal (ml/s)', values: CONCS.map(c => fmt(uro1/c/20,2)), unit: 'ml/s', cls: 'val-calc' },
+    { label: 'Flujo I (mg/s)', values: CONCS.map(_ => fmt(uro1/20,0)), unit: 'mg I/s', cls: 'val-input' },
+  ];
+  const uro2Rows = [
+    { label: 'Volumen 2° bolo (ml)', values: CONCS.map(c => fmt(uro2/c)), unit: 'ml', cls: 'val-calc' },
+    { label: 'Flujo I ref. (mg/s)', values: CONCS.map(_ => fmt(uro2/20,0)), unit: 'mg I/s', cls: 'val-input' },
+  ];
+  buildCards(uro1Rows, 'uro-cards1');
+  buildCards(uro2Rows, 'uro-cards2');
+  const uroAllRows = [
+    { label: 'Vol. 1er bolo (ml)', values: CONCS.map(c => fmt(uro1/c)), unit:'ml', cls:'val-calc' },
+    { label: 'Caudal 1er bolo (ml/s)', values: CONCS.map(c => fmt(uro1/c/20,2)), unit:'ml/s', cls:'val-calc' },
+    { label: 'Vol. 2° bolo (ml)', values: CONCS.map(c => fmt(uro2/c)), unit:'ml', cls:'val-calc' },
+    { label: 'Flujo I total (mg/s)', values: CONCS.map(_ => fmt(uroTotal/20,0)), unit:'mg I/s', cls:'val-input' },
+  ];
+  buildTable(uroAllRows, 'uro-thead', 'uro-body');
+
+  // ---- TÓRAX-ABDOMEN VENOSO ----
+  const torTotal = 380 * w;
+  const torFlujo = torTotal / 20;
+  document.getElementById('tor-total').textContent = fmt(torTotal,0) + ' mg I';
+  document.getElementById('tor-flujo').textContent = fmt(torFlujo,1) + ' mg I/s';
+  const torRows = makeRows(torTotal, 20, w);
+  buildCards(torRows, 'tor-cards');
+  buildTable(torRows, 'tor-thead', 'tor-body');
+
+  // ---- ABDOMEN VENOSO ----
+  const abdTotal = 15750 * bsa;
+  document.getElementById('abd-bsa').textContent = fmt(bsa,3) + ' m²';
+  document.getElementById('abd-total').textContent = fmt(abdTotal,0) + ' mg I';
+  const abdRows = [
+    { label: 'Volumen (ml)', values: CONCS.map(c => fmt(abdTotal/c)), unit: 'ml', cls: 'val-calc' },
+    { label: 'Caudal (ml/s)', values: CONCS.map(_ => '2.50'), unit: 'ml/s', cls: 'val-input' },
+    { label: 'Flujo I (mg/s)', values: ABD_FLUJO_I.map(f => fmt(f,0)), unit: 'mg I/s', cls: 'val-fixed' },
+    { label: 'Tiempo inyección (s)', values: CONCS.map(c => fmt((abdTotal/c)/2.5,1)), unit: 's', cls: 'val-calc' },
+  ];
+  buildCards(abdRows, 'abd-cards');
+  buildTable(abdRows, 'abd-thead', 'abd-body');
+}
+
+function showTab(name, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+function toggleTable(id, toggle) {
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+  toggle.classList.toggle('open');
+}
+
+function toggleCurves(header) {
+  header.classList.toggle('open');
+  header.nextElementSibling.classList.toggle('open');
+}
+
+calc();
+</script>
+</body>
+</html>
