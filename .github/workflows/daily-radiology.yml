@@ -1,0 +1,24 @@
+name: Digest diario de radiología
+
+on:
+  schedule:
+    # 13:00 UTC = 7:00 am Ciudad de México (UTC-6, sin horario de verano)
+    - cron: "0 13 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  send-digest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Buscar artículos, resumir y enviar por Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python radiology_agent/daily_radiology.py
